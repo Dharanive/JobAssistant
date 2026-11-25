@@ -1,0 +1,47 @@
+# ── naukri-assistant / config.yaml  (auto-updated by sync)
+# Run `python main.py sync` to refresh from your Naukri profile.
+
+headless: false
+slow_mo_ms: 0
+keywords:
+- Frontend Developer
+- Ai Developer
+- React.Js
+- Next.Js
+- Mongodb
+- Aws Lambda
+locations:
+- Chennai
+experience_years: 2
+min_salary_lpa: 0
+posted_within_days: 3
+include_words:
+- mongodb
+- aws lambda
+- redux
+- fullstack web developer
+- html/css
+- bootstrap framework
+- javascript
+- api integration
+- react.js
+- node.js
+- nextjs
+- blockchain
+- blockchain developer
+- polygon
+- web3
+exclude_words:
+- intern
+- trainee
+- unpaid
+- walk-in
+- fresher
+exclude_companies: []
+max_applications_per_run: 15
+max_applications_per_day: 20
+delay_between_actions:
+  min: 4
+  max: 9
+max_retries: 3
+retry_backoff_base_s: 5

@@ -1,0 +1,11 @@
+# ── answers.yaml  (optional) ─────────────────────────────────────────────────
+# Map common questionnaire labels to your answers.
+# Keys are lowercased substrings; first match wins.
+# Leave empty or delete the file to skip all questionnaires.
+
+notice_period: "30"           # days
+current_ctc: "10"             # LPA
+expected_ctc: "15"            # LPA
+relocation: "Yes"
+work_authorization: "Yes"
+currently_employed: "Yes"
