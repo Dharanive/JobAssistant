@@ -27,7 +27,7 @@ from typing import Optional
 
 from playwright.sync_api import BrowserContext, Page
 
-import selectors as SEL
+import naukri_selectors as SEL
 from utils import human_delay, screenshot_on_failure, retry_with_backoff
 
 logger = logging.getLogger(__name__)

@@ -31,7 +31,7 @@ import yaml
 from playwright.sync_api import BrowserContext, Page
 
 import db
-import selectors as SEL
+import naukri_selectors as SEL
 from utils import (
     build_search_url,
     extract_job_id,

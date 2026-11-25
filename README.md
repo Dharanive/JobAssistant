@@ -3,8 +3,28 @@
 > Automates two daily tasks on **your own** Naukri.com account:
 > 1. **Profile Boost** – refreshes the "last updated" timestamp to stay visible to recruiters.
 > 2. **Search + Auto-Apply** – searches for jobs matching your filters and applies to native Naukri listings.
+> 3. **Modern Web UI Dashboard** – One-click execution, live status, daily statistics & job history charts.
 
-Built with Python 3.11+, Playwright (Chromium), and SQLite.
+Built with Python 3.11+, Playwright (Chromium), Flask, Tailwind CSS, and SQLite.
+
+---
+
+## 🚀 One-Click Web Dashboard
+
+Start the visual control panel:
+```bash
+# Double click start_dashboard.bat OR run:
+python app.py
+```
+Then open your browser at **`http://localhost:5000`**.
+
+Features available in the UI:
+- **One-Click Actions**: Boost Profile, Auto-Apply, Sync from Naukri, and Dry Run.
+- **Daily Stats & Progress Bar**: Real-time counter of applications today vs your daily limit cap.
+- **7-Day Trend Chart**: Visual chart tracking applied vs skipped jobs.
+- **Live Terminal Log**: Real-time log streaming right on the web page.
+- **Job History Table**: Interactive search, status filtering, and one-click CSV export.
+- **Visual Config Editor**: Modify search terms, location, experience, and filters directly from the UI.
 
 ---
 

@@ -23,7 +23,7 @@ from typing import Optional
 
 from playwright.sync_api import Browser, BrowserContext, Page, Playwright
 
-import selectors as SEL
+import naukri_selectors as SEL
 
 logger = logging.getLogger(__name__)
 

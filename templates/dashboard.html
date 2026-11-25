@@ -1,0 +1,2454 @@
+<!DOCTYPE html>
+<html lang="en" class="dark">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>KLyck - Job Auto-Apply Assistant</title>
+
+  <!-- Favicon -->
+  <link rel="icon" type="image/svg+xml" href="/static/images/favicon.svg">
+  <link rel="alternate icon" href="/static/images/favicon.svg">
+
+  <!-- Tailwind CSS -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      darkMode: 'class',
+      theme: {
+        extend: {
+          colors: {
+            brand: { 50: '#eef2ff', 100: '#e0e7ff', 200: '#c7d2fe', 400: '#818cf8', 500: '#6366f1', 600: '#4f46e5', 700: '#4338ca', 900: '#312e81' },
+            surface: { 50: '#f8fafc', 100: '#f1f5f9', 200: '#e2e8f0', 700: '#334155', 800: '#1e1b2e', 850: '#181528', 900: '#13111c', 950: '#0c0a14' }
+          }
+        }
+      }
+    }
+  </script>
+
+  <!-- React 18 & ReactDOM -->
+  <script crossorigin src="https://unpkg.com/react@18/umd/react.development.js"></script>
+  <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.development.js"></script>
+
+  <!-- Babel Standalone for in-browser JSX parsing -->
+  <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+
+  <!-- Chart.js -->
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.4/dist/chart.umd.min.js"></script>
+
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Caveat:wght@700&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap');
+
+    body {
+      font-family: 'Plus Jakarta Sans', system-ui, sans-serif;
+      transition: background-color 0.25s, color 0.25s;
+    }
+
+    .font-mono {
+      font-family: 'JetBrains Mono', monospace;
+    }
+
+    ::-webkit-scrollbar {
+      width: 6px;
+      height: 6px;
+    }
+
+    ::-webkit-scrollbar-track {
+      background: transparent;
+    }
+
+    ::-webkit-scrollbar-thumb {
+      background: rgba(99, 102, 241, 0.25);
+      border-radius: 9999px;
+    }
+
+    ::-webkit-scrollbar-thumb:hover {
+      background: rgba(99, 102, 241, 0.45);
+    }
+
+    /* Dark glass classes */
+    .dark .glass {
+      background: rgba(24, 21, 40, 0.75);
+      backdrop-filter: blur(16px);
+      border: 1px solid rgba(255, 255, 255, 0.07);
+    }
+
+    .dark .glass-card {
+      background: rgba(30, 27, 46, 0.6);
+      backdrop-filter: blur(12px);
+      border: 1px solid rgba(255, 255, 255, 0.06);
+    }
+
+    /* Light glass classes */
+    .glass {
+      background: rgba(255, 255, 255, 0.85);
+      backdrop-filter: blur(16px);
+      border: 1px solid rgba(0, 0, 0, 0.08);
+      box-shadow: 0 4px 20px -2px rgba(0, 0, 0, 0.05);
+    }
+
+    .glass-card {
+      background: rgba(255, 255, 255, 0.95);
+      backdrop-filter: blur(12px);
+      border: 1px solid rgba(0, 0, 0, 0.07);
+      box-shadow: 0 2px 12px -1px rgba(0, 0, 0, 0.04);
+    }
+
+    .pulse-dot {
+      animation: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+    }
+
+    @keyframes pulse {
+
+      0%,
+      100% {
+        opacity: 1;
+      }
+
+      50% {
+        opacity: 0.35;
+      }
+    }
+
+    /* ═══════════════════════════════════════════════════════════════════════════
+       Sky Toggle Theme Switch Styles (from sky-toggle.tsx)
+       ═══════════════════════════════════════════════════════════════════════════ */
+    .sky-toggle-wrapper .theme-switch {
+      --toggle-size: 11.5px;
+      /* Precision scaled for modern navbar */
+      --container-width: 5.625em;
+      --container-height: 2.5em;
+      --container-radius: 6.25em;
+      --container-light-bg: #3D7EAE;
+      --container-night-bg: #1D1F2C;
+      --circle-container-diameter: 3.375em;
+      --sun-moon-diameter: 2.125em;
+      --sun-bg: #ECCA2F;
+      --moon-bg: #C4C9D1;
+      --spot-color: #959DB1;
+      --circle-container-offset: calc((var(--circle-container-diameter) - var(--container-height)) / 2 * -1);
+      --stars-color: #fff;
+      --clouds-color: #F3FDFF;
+      --back-clouds-color: #AACADF;
+      --transition: .5s cubic-bezier(0, -0.02, 0.4, 1.25);
+      --circle-transition: .3s cubic-bezier(0, -0.02, 0.35, 1.17);
+      display: inline-block;
+      user-select: none;
+    }
+
+    .sky-toggle-wrapper .theme-switch,
+    .sky-toggle-wrapper .theme-switch *,
+    .sky-toggle-wrapper .theme-switch *::before,
+    .sky-toggle-wrapper .theme-switch *::after {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      font-size: var(--toggle-size);
+    }
+
+    .sky-toggle-wrapper .theme-switch__container {
+      width: var(--container-width);
+      height: var(--container-height);
+      background-color: var(--container-light-bg);
+      border-radius: var(--container-radius);
+      overflow: hidden;
+      cursor: pointer;
+      box-shadow: 0em -0.062em 0.062em rgba(0, 0, 0, 0.25), 0em 0.062em 0.125em rgba(255, 255, 255, 0.94);
+      transition: var(--transition);
+      position: relative;
+    }
+
+    .sky-toggle-wrapper .theme-switch__container::before {
+      content: "";
+      position: absolute;
+      z-index: 1;
+      inset: 0;
+      box-shadow: 0em 0.05em 0.187em rgba(0, 0, 0, 0.25) inset;
+      border-radius: var(--container-radius);
+    }
+
+    .sky-toggle-wrapper .theme-switch__checkbox {
+      display: none;
+    }
+
+    .sky-toggle-wrapper .theme-switch__circle-container {
+      width: var(--circle-container-diameter);
+      height: var(--circle-container-diameter);
+      background-color: rgba(255, 255, 255, 0.1);
+      position: absolute;
+      left: var(--circle-container-offset);
+      top: var(--circle-container-offset);
+      border-radius: var(--container-radius);
+      box-shadow: inset 0 0 0 3.375em rgba(255, 255, 255, 0.1), 0 0 0 0.625em rgba(255, 255, 255, 0.1), 0 0 0 1.25em rgba(255, 255, 255, 0.1);
+      display: flex;
+      transition: var(--circle-transition);
+      pointer-events: none;
+    }
+
+    .sky-toggle-wrapper .theme-switch__sun-moon-container {
+      pointer-events: auto;
+      position: relative;
+      z-index: 2;
+      width: var(--sun-moon-diameter);
+      height: var(--sun-moon-diameter);
+      margin: auto;
+      border-radius: var(--container-radius);
+      background-color: var(--sun-bg);
+      box-shadow: 0.062em 0.062em 0.062em 0em rgba(254, 255, 239, 0.61) inset, 0em -0.062em 0.062em 0em #a1872a inset;
+      filter: drop-shadow(0.062em 0.125em 0.125em rgba(0, 0, 0, 0.25)) drop-shadow(0em 0.062em 0.125em rgba(0, 0, 0, 0.25));
+      overflow: hidden;
+      transition: var(--transition);
+    }
+
+    .sky-toggle-wrapper .theme-switch__moon {
+      transform: translateX(100%);
+      width: 100%;
+      height: 100%;
+      background-color: var(--moon-bg);
+      border-radius: inherit;
+      box-shadow: 0.062em 0.062em 0.062em 0em rgba(254, 255, 239, 0.61) inset, 0em -0.062em 0.062em 0em #969696 inset;
+      transition: var(--transition);
+      position: relative;
+    }
+
+    .sky-toggle-wrapper .theme-switch__spot {
+      position: absolute;
+      top: 0.75em;
+      left: 0.312em;
+      width: 0.75em;
+      height: 0.75em;
+      border-radius: var(--container-radius);
+      background-color: var(--spot-color);
+      box-shadow: 0em 0.0312em 0.062em rgba(0, 0, 0, 0.25) inset;
+    }
+
+    .sky-toggle-wrapper .theme-switch__spot:nth-of-type(2) {
+      width: 0.375em;
+      height: 0.375em;
+      top: 0.937em;
+      left: 1.375em;
+    }
+
+    .sky-toggle-wrapper .theme-switch__spot:nth-last-of-type(3) {
+      width: 0.25em;
+      height: 0.25em;
+      top: 0.312em;
+      left: 0.812em;
+    }
+
+    .sky-toggle-wrapper .theme-switch__clouds {
+      width: 1.25em;
+      height: 1.25em;
+      background-color: var(--clouds-color);
+      border-radius: var(--container-radius);
+      position: absolute;
+      bottom: -0.625em;
+      left: 0.312em;
+      box-shadow: 0.937em 0.312em var(--clouds-color), -0.312em -0.312em var(--back-clouds-color), 1.437em 0.375em var(--clouds-color), 0.5em -0.125em var(--back-clouds-color), 2.187em 0 var(--clouds-color), 1.25em -0.062em var(--back-clouds-color), 2.937em 0.312em var(--clouds-color), 2em -0.312em var(--back-clouds-color), 3.625em -0.062em var(--clouds-color), 2.625em 0em var(--back-clouds-color), 4.5em -0.312em var(--clouds-color), 3.375em -0.437em var(--back-clouds-color), 4.625em -1.75em 0 0.437em var(--clouds-color), 4em -0.625em var(--back-clouds-color), 4.125em -2.125em 0 0.437em var(--back-clouds-color);
+      transition: 0.5s cubic-bezier(0, -0.02, 0.4, 1.25);
+    }
+
+    .sky-toggle-wrapper .theme-switch__stars-container {
+      position: absolute;
+      color: var(--stars-color);
+      top: -100%;
+      left: 0.312em;
+      width: 2.75em;
+      height: auto;
+      transition: var(--transition);
+    }
+
+    /* Actions for Sky Toggle Switch */
+    .sky-toggle-wrapper .theme-switch__checkbox:checked+.theme-switch__container {
+      background-color: var(--container-night-bg);
+    }
+
+    .sky-toggle-wrapper .theme-switch__checkbox:checked+.theme-switch__container .theme-switch__circle-container {
+      left: calc(100% - var(--circle-container-offset) - var(--circle-container-diameter));
+    }
+
+    .sky-toggle-wrapper .theme-switch__checkbox:checked+.theme-switch__container .theme-switch__circle-container:hover {
+      left: calc(100% - var(--circle-container-offset) - var(--circle-container-diameter) - 0.187em);
+    }
+
+    .sky-toggle-wrapper .theme-switch__circle-container:hover {
+      left: calc(var(--circle-container-offset) + 0.187em);
+    }
+
+    .sky-toggle-wrapper .theme-switch__checkbox:checked+.theme-switch__container .theme-switch__moon {
+      transform: translate(0);
+    }
+
+    .sky-toggle-wrapper .theme-switch__checkbox:checked+.theme-switch__container .theme-switch__clouds {
+      bottom: -4.062em;
+    }
+
+    .sky-toggle-wrapper .theme-switch__checkbox:checked+.theme-switch__container .theme-switch__stars-container {
+      top: 50%;
+      transform: translateY(-50%);
+    }
+
+    /* ═══════════════════════════════════════════════════════════════════════════
+       Modern Hero Section Styles & Animations
+       ═══════════════════════════════════════════════════════════════════════════ */
+    @keyframes floo-orb-spin {
+      to {
+        transform: rotate(360deg);
+      }
+    }
+
+    @keyframes floo-underline-draw {
+      to {
+        stroke-dashoffset: 0;
+      }
+    }
+
+    @keyframes floo-button-sweep {
+
+      0%,
+      60% {
+        left: -60%;
+      }
+
+      100% {
+        left: 130%;
+      }
+    }
+
+    @keyframes floo-caret-blink {
+      50% {
+        opacity: 0;
+      }
+    }
+
+    @keyframes floo-rise {
+      from {
+        opacity: 0;
+        transform: translateY(16px);
+      }
+
+      to {
+        opacity: 1;
+        transform: translateY(0);
+      }
+    }
+
+    .animate-floo-orb-spin {
+      animation: floo-orb-spin 22s linear infinite;
+    }
+
+    .animate-floo-underline-draw {
+      animation: floo-underline-draw 1.2s 0.2s cubic-bezier(.25, .46, .45, .94) forwards;
+    }
+
+    .animate-floo-button-sweep {
+      animation: floo-button-sweep 2.5s 1.2s ease-in-out infinite;
+    }
+
+    .animate-floo-caret-blink {
+      animation: floo-caret-blink 1.1s step-end infinite;
+    }
+
+    .animate-floo-rise {
+      animation: floo-rise 0.7s ease both;
+    }
+  </style>
+</head>
+
+<body
+  class="bg-surface-50 dark:bg-surface-950 text-slate-800 dark:text-gray-100 min-h-screen selection:bg-brand-500/30 selection:text-brand-600 dark:selection:text-brand-200">
+  <div id="root"></div>
+
+  <!-- React Application Component -->
+  <script type="text/babel">
+    const { useState, useEffect, useRef, useMemo, useCallback, forwardRef, useImperativeHandle } = React;
+
+    // ── SkyToggle Component (/components/ui/sky-toggle.tsx) ───────────
+    function SkyToggle({ checked, onChange }) {
+      return (
+        <div className="sky-toggle-wrapper flex items-center">
+          <label className="theme-switch" title={`Switch to ${checked ? 'Light (Day)' : 'Dark (Night)'} Mode`}>
+            <input
+              type="checkbox"
+              className="theme-switch__checkbox"
+              checked={checked}
+              onChange={(e) => onChange(e.target.checked)}
+            />
+            <div className="theme-switch__container">
+              <div className="theme-switch__clouds" />
+              <div className="theme-switch__stars-container">
+                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 144 55" fill="none">
+                  <path fillRule="evenodd" clipRule="evenodd" d="M135.831 3.00688C135.055 3.85027 134.111 4.29946 133 4.35447C134.111 4.40947 135.055 4.85867 135.831 5.71123C136.607 6.55462 136.996 7.56303 136.996 8.72727C136.996 7.95722 137.172 7.25134 137.525 6.59129C137.886 5.93124 138.372 5.39954 138.98 5.00535C139.598 4.60199 140.268 4.39114 141 4.35447C139.88 4.2903 138.936 3.85027 138.16 3.00688C137.384 2.16348 136.996 1.16425 136.996 0C136.996 1.16425 136.607 2.16348 135.831 3.00688ZM31 23.3545C32.1114 23.2995 33.0551 22.8503 33.8313 22.0069C34.6075 21.1635 34.9956 20.1642 34.9956 19C34.9956 20.1642 35.3837 21.1635 36.1599 22.0069C36.9361 22.8503 37.8798 23.2903 39 23.3545C38.2679 23.3911 37.5976 23.602 36.9802 24.0053C36.3716 24.3995 35.8864 24.9312 35.5248 25.5913C35.172 26.2513 34.9956 26.9572 34.9956 27.7273C34.9956 26.563 34.6075 25.5546 33.8313 24.7112C33.0551 23.8587 32.1114 23.4095 31 23.3545ZM0 36.3545C1.11136 36.2995 2.05513 35.8503 2.83131 35.0069C3.6075 34.1635 3.99559 33.1642 3.99559 32C3.99559 33.1642 4.38368 34.1635 5.15987 35.0069C5.93605 35.8503 6.87982 36.2903 8 36.3545C7.26792 36.3911 6.59757 36.602 5.98015 37.0053C5.37155 37.3995 4.88644 37.9312 4.52481 38.5913C4.172 39.2513 3.99559 39.9572 3.99559 40.7273C3.99559 39.563 3.6075 38.5546 2.83131 37.7112C2.05513 36.8587 1.11136 36.4095 0 36.3545ZM56.8313 24.0069C56.0551 24.8503 55.1114 25.2995 54 25.3545C55.1114 25.4095 56.0551 25.8587 56.8313 26.7112C57.6075 27.5546 57.9956 28.563 57.9956 29.7273C57.9956 28.9572 58.172 28.2513 58.5248 27.5913C58.8864 26.9312 59.3716 26.3995 59.9802 26.0053C60.5976 25.602 61.2679 25.3911 62 25.3545C60.8798 25.2903 59.9361 24.8503 59.1599 24.0069C58.3837 23.1635 57.9956 22.1642 57.9956 21C57.9956 22.1642 57.6075 23.1635 56.8313 24.0069ZM81 25.3545C82.1114 25.2995 83.0551 24.8503 83.8313 24.0069C84.6075 23.1635 84.9956 22.1642 84.9956 21C84.9956 22.1642 85.3837 23.1635 86.1599 24.0069C86.9361 24.8503 87.8798 25.2903 89 25.3545C88.2679 25.3911 87.5976 25.602 86.9802 26.0053C86.3716 26.3995 85.8864 26.9312 85.5248 27.5913C85.172 28.2513 84.9956 28.9572 84.9956 29.7273C84.9956 28.563 84.6075 27.5546 83.8313 26.7112C83.0551 25.8587 82.1114 25.4095 81 25.3545ZM136 36.3545C137.111 36.2995 138.055 35.8503 138.831 35.0069C139.607 34.1635 139.996 33.1642 139.996 32C139.996 33.1642 140.384 34.1635 141.16 35.0069C141.936 35.8503 142.88 36.2903 144 36.3545C143.268 36.3911 142.598 36.602 141.98 37.0053C141.372 37.3995 140.886 37.9312 140.525 38.5913C140.172 39.2513 139.996 39.9572 139.996 40.7273C139.996 39.563 139.607 38.5546 138.831 37.7112C138.055 36.8587 137.111 36.4095 136 36.3545ZM101.831 49.0069C101.055 49.8503 100.111 50.2995 99 50.3545C100.111 50.4095 101.055 50.8587 101.831 51.7112C102.607 52.5546 102.996 53.563 102.996 54.7273C102.996 53.9572 103.172 53.2513 103.525 52.5913C103.886 51.9312 104.372 51.3995 104.98 51.0053C105.598 50.602 106.268 50.3911 107 50.3545C105.88 50.2903 104.936 49.8503 104.16 49.0069C103.384 48.1635 102.996 47.1642 102.996 46C102.996 47.1642 102.607 48.1635 101.831 49.0069Z" fill="currentColor" />
+                </svg>
+              </div>
+              <div className="theme-switch__circle-container">
+                <div className="theme-switch__sun-moon-container">
+                  <div className="theme-switch__moon">
+                    <div className="theme-switch__spot" />
+                    <div className="theme-switch__spot" />
+                    <div className="theme-switch__spot" />
+                  </div>
+                </div>
+              </div>
+            </div>
+          </label>
+        </div>
+      );
+    }
+
+    // ── Splashed Push Notifications Component ─────────────────────────
+    const NOTIFICATION_ICONS = {
+      success: `<svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M18 6 7 17l-5-5"/><path d="m22 10-7.5 7.5L13 16"/></svg>`,
+      help: `<svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M7.9 20A9 9 0 1 0 4 16.1L2 22Z"/><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"/><path d="M12 17h.01"/></svg>`,
+      warning: `<svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M4 14a1 1 0 0 1-.78-1.63l9.9-10.2a.5.5 0 0 1 .86.46l-1.92 6.02A1 1 0 0 0 13 10h7a1 1 0 0 1 .78 1.63l-9.9 10.2a.5.5 0 0 1-.86-.46l1.92-6.02A1 1 0 0 0 11 14z"/></svg>`,
+      error: `<svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M20 13c0 5-3.5 7.5-7.66 8.95a1 1 0 0 1-.67-.01C7.5 20.5 4 18 4 13V6a1 1 0 0 1 1-1c2 0 4.5-1.2 6.24-2.72a1.17 1.17 0 0 1 1.52 0C14.51 3.81 17 5 19 5a1 1 0 0 1 1 1z"/><path d="m14.5 9.5-5 5"/><path d="m9.5 9.5 5 5"/></svg>`
+    };
+
+    const CLOSE_ICON = `<svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg>`;
+
+    const SplashedPushNotifications = forwardRef(({ timerColor, timerBgColor }, ref) => {
+      const containerRef = useRef(null);
+
+      useEffect(() => {
+        if (document.getElementById('splashed-toast-css')) return;
+        const style = document.createElement('style');
+        style.id = 'splashed-toast-css';
+        style.innerHTML = `
+          .notificationContainer { display: flex; flex-direction: column; align-items: flex-end; position: fixed; bottom: 20px; right: 20px; max-width: 360px; z-index: 999999; pointer-events: none; }
+          .notificationContainer > * { pointer-events: auto; }
+          .toast { color: #f5f5f5; padding: 1.15rem 1.4rem; border-radius: 14px; background-color: #1e1b2e; transition: transform 0.8s ease; animation: appear 0.45s cubic-bezier(0.16, 1, 0.3, 1) forwards; display: flex; align-items: center; justify-content: space-between; overflow: hidden; position: relative; margin-bottom: 12px; box-shadow: 0 12px 36px -4px rgba(0,0,0,0.45), 0 0 0 1px rgba(255,255,255,0.12); }
+          .toastContent { width: 100%; display: flex; align-items: center; }
+          .toastTitle { font-weight: 700; font-size: 0.925rem; margin-bottom: 0.2rem; letter-spacing: 0.01em; color: #ffffff; }
+          .toastText { font-size: 0.8rem; opacity: 0.95; line-height: 1.35; color: rgba(255, 255, 255, 0.9); }
+          .timer { position: absolute; bottom: 0; left: 0; height: 4px; width: 100%; animation: splTimer 4s linear forwards; }
+          @keyframes splTimer { 0% { width: 100%; } 100% { width: 0%; } }
+          .bounceEffect { animation: splBounce 1.5s ease-in-out infinite; display: flex; align-items: center; justify-content: center; }
+          @keyframes appear { 0% { transform: translateY(100px); opacity: 0; } 100% { transform: translateY(0px); opacity: 1; } }
+          @keyframes splBounce { 0%, 20%, 50%, 80%, 100% { transform: translateY(0); } 40% { transform: translateY(-5px); } 60% { transform: translateY(-3px); } }
+          .closeBtn { margin-left: 1rem; cursor: pointer; opacity: 0.8; transition: opacity 0.2s; display: flex; align-items: center; }
+          .closeBtn:hover { opacity: 1; }
+          .success { background: linear-gradient(135deg, #059669 0%, #10b981 100%); }
+          .warning { background: linear-gradient(135deg, #d97706 0%, #fc8621 100%); }
+          .error { background: linear-gradient(135deg, #dc2626 0%, #ef4444 100%); }
+          .help { background: linear-gradient(135deg, #4338ca 0%, #6366f1 100%); }
+        `;
+        document.head.appendChild(style);
+      }, []);
+
+      const removeNotification = (toast) => {
+        toast.style.animation = 'appear 0.4s ease reverse forwards';
+        setTimeout(() => toast.remove(), 400);
+      };
+
+      const createNotification = (type, title, content) => {
+        const icon = NOTIFICATION_ICONS[type] || NOTIFICATION_ICONS.help;
+        const toast = document.createElement('div');
+        toast.classList.add('toast', type);
+
+        const resolvedTimerColor = timerColor || (type === 'warning' ? '#c24914' : '#ffffff');
+        const resolvedTimerBgColor = timerBgColor || (type === 'warning' ? '#fc8621' : 'rgba(0,0,0,0.25)');
+
+        toast.innerHTML = `
+          <div class="toastContent">
+            <div class="bounceEffect">${icon}</div>
+            <div style="margin-left: 1.15rem;">
+              <div class="toastTitle">${title}</div>
+              <div class="toastText">${content}</div>
+            </div>
+          </div>
+          <div class="closeBtn">${CLOSE_ICON}</div>
+          <div class="timer" style="background-color: ${resolvedTimerColor};">
+            <div style="background-color: ${resolvedTimerBgColor}; width: 100%; height: 100%;"></div>
+          </div>
+        `;
+
+        const closeBtn = toast.querySelector('.closeBtn');
+        closeBtn?.addEventListener('click', () => removeNotification(toast));
+
+        containerRef.current?.appendChild(toast);
+
+        setTimeout(() => {
+          removeNotification(toast);
+        }, 4000);
+      };
+
+      useImperativeHandle(ref, () => ({
+        createNotification,
+        createRtlNotification: createNotification
+      }));
+
+      return <div ref={containerRef} className="notificationContainer" />;
+    });
+
+    // ── Modern & Stunning Hero Section (21st.dev floodesign) ───────────
+    const PEEPS = [
+      "381d6479-f5b5-49ca-82f3-474c87c62996",
+      "9df39fca-20db-4273-bf7e-488d04a13321",
+      "3c8ee64a-67b3-4a2c-84d5-c665c725e7c5",
+      "3ccafa92-f479-4885-a6fb-0af92993b7f6",
+      "735686b6-9bd5-4ab1-9fe6-59c50b5e2eb0",
+      "3f775475-8920-4f55-b7c1-16bf192a0b1f",
+      "b56ceaf5-7fb3-40a2-bb1a-d41c547c71ca",
+      "4bd0452d-b321-4488-b57a-0c52dc73ceb1",
+      "5d3553c5-a46f-4238-bcb5-02ff60b0f907",
+      "6669baf9-e6d8-476b-abd4-e3d52517aee8",
+      "2a2fffcb-9e4e-4610-a2ec-c2c334e29001",
+      "742a5c0b-c77f-4ab3-96eb-dbca387f5ff8",
+      "da0b3073-d6fd-46d2-a1f6-747fbfedf2b1",
+      "d9738cd5-9685-47c4-9eab-e004c4d83776",
+      "706557e0-8408-4b07-bcab-2968cf4c493e",
+    ].map((id) => `https://floo.design/api/a/${id}.svg`);
+
+    const ArrowIcon = () => (
+      <svg viewBox="0 0 24 24" className="h-[18px] w-[18px] shrink-0" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+        <path d="M5 12h14M13 6l6 6-6 6" />
+      </svg>
+    );
+
+    const EyeIcon = () => (
+      <svg viewBox="0 0 24 24" className="h-4 w-4" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+        <path d="M2 12s3-7 10-7 10 7 10 7-3 7-10 7-10-7-10-7Z" />
+        <circle cx="12" cy="12" r="3" />
+      </svg>
+    );
+
+    const EyeOffIcon = () => (
+      <svg viewBox="0 0 24 24" className="h-4 w-4" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+        <path d="M9.88 9.88a3 3 0 1 0 4.24 4.24" />
+        <path d="M10.73 5.08A10.43 10.43 0 0 1 12 5c7 0 10 7 10 7a13.16 13.16 0 0 1-1.67 2.68" />
+        <path d="M6.61 6.61A13.526 13.526 0 0 0 2 12s3 7 10 7a9.74 9.74 0 0 0 5.39-1.61" />
+        <line x1="2" x2="22" y1="2" y2="22" />
+      </svg>
+    );
+
+    const LockIcon = () => (
+      <svg viewBox="0 0 24 24" className="h-3 w-3 shrink-0" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+        <rect width="18" height="11" x="3" y="11" rx="2" ry="2" />
+        <path d="M7 11V7a5 5 0 0 1 10 0v4" />
+      </svg>
+    );
+
+    const PLATFORMS = [
+      { id: 'naukri', name: 'Naukri', available: true, label: 'Ready' },
+      { id: 'indeed', name: 'Indeed', available: false, label: 'Future' },
+      { id: 'linkedin', name: 'LinkedIn', available: false, label: 'Future' },
+      { id: 'other', name: 'Other', available: false, label: 'Future' },
+    ];
+
+    function HeroSection({ sessionInfo, onConnectSuccess, notify, connectOpen, setConnectOpen }) {
+      const crowdRef = useRef(null);
+      const [reducedMotion, setReducedMotion] = useState(false);
+      // Hero starts closed by default showing the clean "Connect ->" button
+      const isControlled = connectOpen !== undefined && setConnectOpen !== undefined;
+      const [internalOpen, setInternalOpen] = useState(false);
+      const isDrawerOpen = isControlled ? connectOpen : internalOpen;
+      const setIsDrawerOpen = isControlled ? setConnectOpen : setInternalOpen;
+      const [selectedPlatform, setSelectedPlatform] = useState('naukri');
+      const [email, setEmail] = useState('');
+      const [password, setPassword] = useState('');
+      const [showPass, setShowPass] = useState(false);
+      const [connecting, setConnecting] = useState(false);
+
+      useEffect(() => {
+        const media = window.matchMedia("(prefers-reduced-motion: reduce)");
+        setReducedMotion(media.matches);
+        const updateMotion = () => setReducedMotion(media.matches);
+        media.addEventListener("change", updateMotion);
+        return () => media.removeEventListener("change", updateMotion);
+      }, []);
+
+      useEffect(() => {
+        const crowd = crowdRef.current;
+        if (!crowd) return;
+
+        const things = [
+          "profile boost",
+          "auto apply",
+          "resume skill sync",
+          "recruiter visibility",
+          "keyword matching",
+          "daily applications",
+        ];
+
+        const output = document.getElementById("thing");
+        let ti = 0;
+        let ci = things[0].length;
+        let deleting = false;
+        if (output) output.textContent = things[0];
+
+        let typingInterval;
+        if (!reducedMotion) {
+          typingInterval = setInterval(() => {
+            const word = things[ti];
+            if (!deleting) {
+              ci++;
+              if (ci > word.length) {
+                deleting = true;
+                ci = word.length + 8;
+              }
+            } else {
+              ci--;
+              if (ci < 0) {
+                deleting = false;
+                ti = (ti + 1) % things.length;
+                ci = 0;
+              }
+            }
+            if (output) {
+              output.textContent = word.slice(0, Math.max(0, Math.min(ci, word.length)));
+            }
+          }, 70);
+        }
+
+        const people = [];
+        let mx = 0;
+        let tx = 0;
+        let last = performance.now();
+        let frame;
+
+        const place = (person, anywhere = false) => {
+          person.t = 31 + Math.random() * 54;
+          const width = 146 + (person.t - 31.8) * 2.62;
+          person.dir = Math.random() < 0.5 ? 1 : -1;
+          person.speed = 108 / (9 + Math.random() * 27);
+          person.x = anywhere ? -5 + Math.random() * 110 : person.dir > 0 ? -5 : 104;
+          person.depth = (person.t - 31) / 54;
+
+          person.wrapper.style.cssText = `
+            position: absolute;
+            left: 0;
+            top:${person.t.toFixed(2)}%;
+            width:${width.toFixed(1)}px;
+            height:${(width * 1.35).toFixed(1)}px;
+            z-index:${Math.floor(person.t)};
+          `;
+
+          person.image.src = PEEPS[Math.floor(Math.random() * PEEPS.length)];
+          person.image.style.filter = `blur(${Math.max(0.04, (78 - person.t) * 0.05).toFixed(2)}px)`;
+          person.image.style.transform = `scaleX(${person.dir})`;
+        };
+
+        for (let i = 0; i < 48; i++) {
+          const wrapper = document.createElement("div");
+          wrapper.className = "absolute left-0 will-change-transform";
+
+          const element = document.createElement("div");
+          element.className = "h-full w-full will-change-transform [backface-visibility:hidden]";
+
+          const img = document.createElement("img");
+          img.alt = "";
+          img.draggable = false;
+          img.decoding = "async";
+          img.className = "block h-full w-full select-none";
+
+          element.appendChild(img);
+          wrapper.appendChild(element);
+          crowd.appendChild(wrapper);
+
+          const person = { wrapper, element, image: img };
+          place(person, true);
+          people.push(person);
+        }
+
+        const handlePointerMove = (event) => {
+          tx = event.clientX / window.innerWidth - 0.5;
+        };
+        window.addEventListener("pointermove", handlePointerMove);
+
+        const animate = (now) => {
+          const dt = Math.min(0.05, (now - last) / 1000);
+          last = now;
+          mx += (tx - mx) * 0.06;
+
+          people.forEach((person) => {
+            if (!reducedMotion) {
+              person.x += person.dir * person.speed * dt;
+              if (person.x > 104 || person.x < -6) {
+                place(person);
+              }
+            }
+            person.element.style.transform = `translate3d(calc(-50% + ${person.x.toFixed(2)}vw), -50%, 0)`;
+            person.wrapper.style.transform = `translate3d(${(-mx * person.depth * 3).toFixed(2)}vw, 0, 0)`;
+          });
+
+          if (!reducedMotion) {
+            frame = requestAnimationFrame(animate);
+          }
+        };
+
+        if (!reducedMotion) {
+          frame = requestAnimationFrame(animate);
+        }
+
+        return () => {
+          if (typingInterval) clearInterval(typingInterval);
+          cancelAnimationFrame(frame);
+          window.removeEventListener("pointermove", handlePointerMove);
+          crowd.innerHTML = "";
+        };
+      }, [reducedMotion]);
+
+      const handleConnect = async (e) => {
+        e.preventDefault();
+        if (!email || !password) {
+          notify('error', 'Missing Credentials', 'Please enter your Naukri email and password.');
+          return;
+        }
+        setConnecting(true);
+        try {
+          const res = await fetch('/api/connect', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ email, password })
+          });
+          const contentType = res.headers.get('content-type') || '';
+          if (!contentType.includes('application/json')) {
+            notify('error', `Server Error (${res.status})`, 'API endpoint not found. Please restart "python app.py" in your terminal.');
+            return;
+          }
+          const data = await res.json();
+          if (data.ok) {
+            notify('success', 'Account Connected', 'Naukri credentials linked! Updating features.');
+            onConnectSuccess();
+            setIsDrawerOpen(false);
+            setEmail('');
+            setPassword('');
+          } else {
+            notify('error', 'Connection Failed', data.error || 'Failed to link account.');
+          }
+        } catch (err) {
+          notify('error', 'Network Error', 'Server unreachable. Make sure "python app.py" is running.');
+        } finally {
+          setConnecting(false);
+        }
+      };
+
+      return (
+        <div className="relative isolate overflow-hidden rounded-3xl mb-8 bg-[#030305] font-sans text-[#ededef] antialiased shadow-2xl border border-white/10">
+
+          {/* Background glow orb - Warm Orange / Amber */}
+          <div className="pointer-events-none absolute left-1/2 top-[-260px] -ml-[450px] h-[760px] w-[900px] animate-floo-orb-spin rounded-full bg-[conic-gradient(from_0deg,#ff9900,#f97316,#ea580c,#facc15,#ff9900)] opacity-[0.25] blur-[150px]" />
+
+          {/* Hero Content */}
+          <div className="relative z-[5] px-5 pb-20 pt-12 sm:pt-16 text-center">
+
+            <h1 className="animate-floo-rise text-[clamp(40px,5.8vw,74px)] font-bold leading-[1.0] tracking-[-3px] text-white">
+              Supercharge your job hunt
+              <br />
+              <span className="relative inline-block text-white">
+                on autopilot.
+                <svg
+                  viewBox="0 0 520 22"
+                  preserveAspectRatio="none"
+                  className="absolute -bottom-[12px] left-[-1%] h-[20px] w-[102%] overflow-visible"
+                >
+                  <defs>
+                    <linearGradient id="underline-gradient" x1="0" x2="1">
+                      <stop stopColor="#fb923c" />
+                      <stop offset=".5" stopColor="#f97316" />
+                      <stop offset="1" stopColor="#ea580c" />
+                    </linearGradient>
+                  </defs>
+                  <path
+                    pathLength="1"
+                    d="M6 14C120 4 300 3 514 12"
+                    className="animate-floo-underline-draw fill-none stroke-[5] [stroke:url(#underline-gradient)] [stroke-linecap:round] [stroke-dasharray:1] [stroke-dashoffset:1]"
+                  />
+                </svg>
+              </span>
+            </h1>
+
+            <p className="mx-auto mt-[24px] max-w-[720px] animate-floo-rise text-[16px] sm:text-[18px] leading-[1.55] text-gray-300">
+              Boost your Naukri recruiter search ranking daily, auto-apply to targeted roles with smart keyword filtering, sync resume skills, and stream real-time browser execution.
+            </p>
+
+            {/* CTA buttons */}
+            <div className="mt-[28px] flex animate-floo-rise flex-col justify-center gap-3 sm:flex-row sm:gap-4">
+              <button
+                type="button"
+                onClick={() => setIsDrawerOpen(true)}
+                className="group relative inline-flex h-12 sm:h-14 items-center justify-center gap-2.5 overflow-hidden rounded-xl bg-gradient-to-b from-[#f97316] to-[#ea580c] px-[32px] text-[16px] font-bold text-white shadow-[inset_0_1px_0_rgba(255,255,255,.35),0_0_0_1px_rgba(249,115,22,.6),0_16px_40px_-12px_rgba(249,115,22,.75)] transition hover:brightness-110"
+              >
+                <span className="absolute inset-y-0 -left-[60%] w-[40%] skew-x-[-20deg] animate-floo-button-sweep bg-gradient-to-r from-transparent via-white/50 to-transparent" />
+                <span className="relative">Start Automating</span>
+                <span className="relative transition-transform group-hover:translate-x-[3px]">
+                  <ArrowIcon />
+                </span>
+              </button>
+
+              <button
+                type="button"
+                onClick={() => {
+                  const el = document.getElementById('live-console-sec');
+                  if (el) el.scrollIntoView({ behavior: 'smooth' });
+                }}
+                className="inline-flex h-12 sm:h-14 items-center justify-center gap-2.5 rounded-xl border border-white/[0.14] bg-white/[0.04] px-[28px] text-[16px] font-bold text-white transition hover:bg-white/[0.08]"
+              >
+                <svg viewBox="0 0 24 24" className="h-[18px] w-[18px]">
+                  <path fill="#f97316" d="M7 4.5v15l13-7.5z" />
+                </svg>
+                View Automation Hub
+              </button>
+            </div>
+
+            {/* Composer */}
+            <div className="relative mx-auto mt-[34px] w-full max-w-[640px] animate-floo-rise">
+              <div className="absolute -inset-x-[140px] -inset-y-[30px] -z-10 bg-[radial-gradient(closest-side,rgba(0,0,0,.85),transparent)]" />
+
+              <h2 className="font-['Caveat',cursive] text-[32px] sm:text-[38px] font-bold leading-tight text-white">
+                Connect your account. Let KLyck work.
+              </h2>
+
+              <p className="mb-4 mt-2 text-[14px] sm:text-[15px] text-gray-400">
+                Select platform first and enter credentials to unlock automated profile boosting & 1-click applies.
+              </p>
+
+              <div className="relative rounded-2xl bg-[#121215] p-3 pl-[18px] text-left shadow-[0_30px_60px_-20px_rgba(0,0,0,.95)] border border-orange-500/30">
+                <div className="flex items-center gap-2.5">
+                  <div
+                    onClick={() => setIsDrawerOpen(true)}
+                    className="min-w-0 flex-1 text-[16px] sm:text-[17px] text-[#a1a1aa] cursor-pointer"
+                  >
+                    Let’s automate{" "}
+                    <b id="thing" className="font-semibold text-orange-400">
+                      profile boost
+                    </b>
+                    <i className="ml-0.5 inline-block h-[19px] w-0.5 animate-floo-caret-blink bg-orange-500 align-[-3px]" />
+                  </div>
+
+                  <button
+                    type="button"
+                    onClick={() => setIsDrawerOpen(!isDrawerOpen)}
+                    className="inline-flex h-[42px] shrink-0 items-center gap-2 rounded-[10px] bg-gradient-to-r from-orange-500 to-amber-500 px-[18px] text-[15px] font-semibold text-white shadow-md transition hover:brightness-110"
+                  >
+                    {isDrawerOpen ? 'Close' : 'Connect'} <ArrowIcon />
+                  </button>
+                </div>
+
+                {/* Dynamic Multi-Platform Connect Drawer inside Composer */}
+                {isDrawerOpen && (
+                  <form onSubmit={handleConnect} className="mt-4 pt-4 border-t border-white/10 space-y-3.5">
+
+                    {/* Platform Selector */}
+                    <div className="space-y-1.5">
+                      <div className="flex items-center justify-between text-xs">
+                        <span className="text-gray-300 font-medium">Select platform first:</span>
+                        <span className="text-[11px] text-gray-500">Only active platform connects</span>
+                      </div>
+                      <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
+                        {PLATFORMS.map((p) => {
+                          const isSelected = selectedPlatform === p.id;
+                          return (
+                            <button
+                              key={p.id}
+                              type="button"
+                              onClick={() => {
+                                if (!p.available) {
+                                  notify('warning', 'Platform Locked', `${p.name} integration is locked. It will be available in future releases!`);
+                                  return;
+                                }
+                                setSelectedPlatform(p.id);
+                              }}
+                              className={`relative flex items-center justify-between px-3 py-2 rounded-xl text-xs font-semibold transition border ${isSelected && p.available
+                                ? 'bg-orange-500/15 border-orange-500 text-white shadow-[0_0_12px_rgba(249,115,22,0.25)]'
+                                : p.available
+                                  ? 'bg-white/5 border-white/10 text-gray-300 hover:border-white/20 hover:text-white'
+                                  : 'bg-white/[0.02] border-white/5 text-gray-500 cursor-not-allowed hover:border-white/10'
+                                }`}
+                            >
+                              <span className="truncate">{p.name}</span>
+                              {p.available ? (
+                                <span className="ml-1 inline-flex items-center text-[10px] text-emerald-400 bg-emerald-400/10 px-1.5 py-0.5 rounded-full font-mono">
+                                  Active
+                                </span>
+                              ) : (
+                                <span className="ml-1 inline-flex items-center gap-1 text-[10px] text-amber-400/80 bg-amber-400/10 px-1.5 py-0.5 rounded-full font-mono">
+                                  <LockIcon /> Soon
+                                </span>
+                              )}
+                            </button>
+                          );
+                        })}
+                      </div>
+                    </div>
+
+                    <div className="flex items-center justify-between text-xs text-gray-400 pt-1">
+                      <span>Enter {selectedPlatform === 'naukri' ? 'Naukri' : selectedPlatform} credentials to unlock automated profile boosting & 1-click applies:</span>
+                      {sessionInfo?.configured && (
+                        <span className="text-emerald-400 font-medium">✓ Active: {sessionInfo?.email}</span>
+                      )}
+                    </div>
+
+                    <div className="grid sm:grid-cols-2 gap-3">
+                      <input
+                        type="email"
+                        value={email}
+                        onChange={(e) => setEmail(e.target.value)}
+                        placeholder={`${selectedPlatform === 'naukri' ? 'Naukri' : selectedPlatform} email address`}
+                        className="w-full bg-white/5 border border-white/10 rounded-xl px-3.5 py-2.5 text-xs text-white placeholder:text-gray-500 focus:outline-none focus:border-orange-500 transition"
+                        required
+                      />
+                      <div className="relative">
+                        <input
+                          type={showPass ? 'text' : 'password'}
+                          value={password}
+                          onChange={(e) => setPassword(e.target.value)}
+                          placeholder={`${selectedPlatform === 'naukri' ? 'Naukri' : selectedPlatform} password`}
+                          className="w-full bg-white/5 border border-white/10 rounded-xl px-3.5 py-2.5 pr-10 text-xs text-white placeholder:text-gray-500 focus:outline-none focus:border-orange-500 transition"
+                          required
+                        />
+                        <button
+                          type="button"
+                          onClick={() => setShowPass(!showPass)}
+                          className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-orange-400 transition"
+                          aria-label={showPass ? 'Hide password' : 'Show password'}
+                        >
+                          {showPass ? <EyeOffIcon /> : <EyeIcon />}
+                        </button>
+                      </div>
+                    </div>
+
+                    <div className="flex items-center justify-between pt-1">
+                      <button
+                        type="submit"
+                        disabled={connecting}
+                        className="inline-flex h-[38px] items-center gap-2 rounded-xl bg-gradient-to-r from-orange-500 to-amber-500 px-5 text-xs font-bold text-white shadow transition hover:brightness-110 disabled:opacity-50"
+                      >
+                        {connecting ? 'Connecting...' : 'Connect & Analyze'} →
+                      </button>
+                    </div>
+                  </form>
+                )}
+              </div>
+            </div>
+          </div>
+
+          {/* Animated walking characters crowd across bottom */}
+          <div
+            ref={crowdRef}
+            className="pointer-events-none absolute bottom-0 left-0 right-0 z-[3] h-[320px] overflow-hidden"
+            aria-hidden="true"
+          />
+        </div>
+      );
+    }
+
+    // ═══════════════════════════════════════════════════════════════════════════
+    // Dynamic Gantt Chart Component (21st.dev klyv-ui/gantt-chart)
+    // ═══════════════════════════════════════════════════════════════════════════
+    const GANTT_DAY = 86400000;
+    const GANTT_UNIT = { day: 32, week: 10, month: 3 };
+    const GANTT_HEADER = 32;
+
+    const ganttStartOfDay = (date) => new Date(date.getFullYear(), date.getMonth(), date.getDate());
+    const ganttAddDays = (date, days) => new Date(date.getFullYear(), date.getMonth(), date.getDate() + days);
+    const ganttDaysBetween = (a, b) => Math.round((ganttStartOfDay(b).getTime() - ganttStartOfDay(a).getTime()) / GANTT_DAY);
+    const ganttShort = (date) => date.toLocaleDateString(undefined, { month: "short", day: "numeric" });
+
+    function GanttChartComponent({ tasks = [], label, defaultZoom = "week", today: todayProp, rowHeight = 36 }) {
+      const [width, setWidth] = useState(640);
+      const [scrollLeft, setScrollLeft] = useState(0);
+      const [zoom, setZoom] = useState(defaultZoom);
+      const [active, setActive] = useState(null);
+      const scrollRef = useRef(null);
+
+      useEffect(() => {
+        if (!scrollRef.current) return;
+        const updateWidth = () => {
+          if (scrollRef.current) {
+            setWidth(scrollRef.current.clientWidth || 640);
+          }
+        };
+        updateWidth();
+        window.addEventListener('resize', updateWidth);
+        return () => window.removeEventListener('resize', updateWidth);
+      }, []);
+
+      const safeTasks = Array.isArray(tasks) ? tasks : [];
+      const today = ganttStartOfDay(todayProp || new Date());
+      const rows = [];
+      const lanes = [...new Set(safeTasks.map((task) => task.lane || ""))];
+      const ordered = [];
+      for (const lane of lanes) {
+        if (lane) rows.push({ kind: "lane", lane });
+        for (const task of safeTasks.filter((entry) => (entry.lane || "") === lane)) {
+          rows.push({ kind: "task", task, order: ordered.length });
+          ordered.push(task);
+        }
+      }
+
+      let first = today;
+      let last = today;
+      for (const task of safeTasks) {
+        if (task.start && task.start < first) first = task.start;
+        const end = task.milestone ? task.start : task.end;
+        if (end && end > last) last = end;
+      }
+      let origin = ganttAddDays(first, zoom === "day" ? -1 : -2);
+      if (zoom === "week") origin = ganttAddDays(origin, -((origin.getDay() + 6) % 7));
+      if (zoom === "month") origin = new Date(origin.getFullYear(), origin.getMonth(), 1);
+
+      const unit = GANTT_UNIT[zoom] || 10;
+      const span = ganttDaysBetween(origin, last) + (zoom === "month" ? 21 : 6);
+      const chartWidth = Math.max(width, span * unit);
+      const height = GANTT_HEADER + rows.length * rowHeight + 8;
+      const toX = (date) => ganttDaysBetween(origin, date) * unit;
+      const rowY = new Map();
+      rows.forEach((row, index) => {
+        if (row.kind === "task") {
+          rowY.set(row.task.id, GANTT_HEADER + index * rowHeight + rowHeight / 2);
+        }
+      });
+
+      const ticks = [];
+      for (let offset = 0; offset * unit <= chartWidth; offset += 1) {
+        const date = ganttAddDays(origin, offset);
+        if (zoom === "day") {
+          ticks.push({ date, text: String(date.getDate()), major: date.getDate() === 1 || offset === 0 });
+        } else if (zoom === "week" && date.getDay() === 1) {
+          ticks.push({ date, text: ganttShort(date), major: false });
+        } else if (zoom === "month" && date.getDate() === 1) {
+          ticks.push({ date, text: date.toLocaleDateString(undefined, { month: "short", year: "2-digit" }), major: false });
+        }
+      }
+
+      const current = active === null ? null : ordered[active];
+
+      return (
+        <div className="flex w-full flex-col gap-3">
+          <div className="flex items-center justify-between">
+            <div className="text-xs font-semibold text-slate-700 dark:text-gray-300 flex items-center gap-2">
+              <span className="w-2 h-2 rounded-full bg-orange-500" />
+              <span>{label || 'Automation Timeline & Milestones'}</span>
+            </div>
+            <div className="inline-flex rounded-xl bg-black/[0.04] dark:bg-white/5 p-1 border border-black/5 dark:border-white/10 text-xs">
+              {['day', 'week', 'month'].map((z) => (
+                <button
+                  key={z}
+                  type="button"
+                  onClick={() => setZoom(z)}
+                  className={`px-3 py-1 rounded-lg font-semibold capitalize transition ${zoom === z
+                    ? 'bg-gradient-to-r from-orange-500 to-amber-500 text-white shadow-sm'
+                    : 'text-slate-500 dark:text-gray-400 hover:text-slate-900 dark:hover:text-white'
+                    }`}
+                >
+                  {z}
+                </button>
+              ))}
+            </div>
+          </div>
+
+          <div className="relative w-full overflow-hidden rounded-2xl border border-black/[0.08] dark:border-white/10 bg-white/40 dark:bg-black/40 backdrop-blur-md shadow-sm">
+            <div className="flex w-full">
+              {/* Task list left sidebar */}
+              <div className="w-[36%] max-w-[240px] shrink-0 border-r border-black/[0.08] dark:border-white/10 bg-black/[0.01] dark:bg-white/[0.02]">
+                <div style={{ height: GANTT_HEADER }} className="border-b border-black/[0.08] dark:border-white/10 flex items-center px-3.5 text-[10px] font-bold uppercase tracking-wider text-slate-400 dark:text-gray-500">
+                  Automation Tasks
+                </div>
+                {rows.map((row) => (
+                  <div
+                    key={row.kind === "lane" ? `lane-${row.lane}` : row.task.id}
+                    style={{ height: rowHeight }}
+                    className={`flex items-center px-3.5 truncate transition ${row.kind === "lane"
+                      ? "text-[10px] font-bold uppercase tracking-wider text-orange-600 dark:text-orange-400 bg-orange-500/5"
+                      : `text-[12px] font-medium text-slate-700 dark:text-gray-300 ${row.order === active ? "text-orange-500 font-bold bg-orange-500/10" : ""}`
+                      }`}
+                  >
+                    <span className="truncate">{row.kind === "lane" ? row.lane : row.task.label}</span>
+                  </div>
+                ))}
+              </div>
+
+              {/* Scrolling chart timeline */}
+              <div
+                ref={scrollRef}
+                className="min-w-0 flex-1 overflow-x-auto relative"
+                onScroll={(e) => setScrollLeft(e.currentTarget.scrollLeft)}
+              >
+                <div className="relative" style={{ width: chartWidth }}>
+                  <svg
+                    width={chartWidth}
+                    height={height}
+                    className="block outline-none"
+                    onPointerMove={(event) => {
+                      const rect = event.currentTarget.getBoundingClientRect();
+                      const rowIdx = Math.floor((event.clientY - rect.top - GANTT_HEADER) / rowHeight);
+                      const r = rows[rowIdx];
+                      setActive(r?.kind === "task" ? r.order : null);
+                    }}
+                    onPointerLeave={() => setActive(null)}
+                  >
+                    <defs>
+                      <marker id="gantt-arrow" viewBox="0 0 8 8" refX="7" refY="4" markerWidth="7" markerHeight="7" orient="auto">
+                        <path d="M0 0L8 4L0 8z" fill="#f97316" />
+                      </marker>
+                    </defs>
+
+                    {/* Lane and hover backgrounds */}
+                    {rows.map((row, index) =>
+                      row.kind === "lane" ? (
+                        <rect
+                          key={`band-${row.lane}`}
+                          x={0}
+                          y={GANTT_HEADER + index * rowHeight}
+                          width={chartWidth}
+                          height={rowHeight}
+                          className="fill-orange-500/[0.02]"
+                        />
+                      ) : (
+                        row.order === active && (
+                          <rect
+                            key="hover"
+                            x={0}
+                            y={GANTT_HEADER + index * rowHeight}
+                            width={chartWidth}
+                            height={rowHeight}
+                            className="fill-orange-500/[0.05]"
+                          />
+                        )
+                      )
+                    )}
+
+                    {/* Timeline Grid ticks */}
+                    {ticks.map((tick) => (
+                      <g key={tick.date.getTime()}>
+                        <line
+                          x1={toX(tick.date)}
+                          x2={toX(tick.date)}
+                          y1={GANTT_HEADER - 6}
+                          y2={height}
+                          stroke={tick.major ? "rgba(249,115,22,0.25)" : "rgba(150,150,150,0.12)"}
+                          strokeWidth="1"
+                        />
+                        <text
+                          x={toX(tick.date) + (zoom === "day" ? unit / 2 : 4)}
+                          y={19}
+                          textAnchor={zoom === "day" ? "middle" : "start"}
+                          className="text-[10px] font-mono fill-slate-400 dark:fill-gray-500"
+                        >
+                          {tick.text}
+                        </text>
+                      </g>
+                    ))}
+
+                    <line x1={0} x2={chartWidth} y1={GANTT_HEADER} y2={GANTT_HEADER} stroke="rgba(150,150,150,0.18)" strokeWidth="1" />
+
+                    {/* Dependency Arrows */}
+                    {ordered.flatMap((task) =>
+                      (task.dependsOn || []).map((id) => {
+                        const from = ordered.find((entry) => entry.id === id);
+                        if (!from) return null;
+                        const x1 = from.milestone ? toX(from.start) + unit / 2 + 7 : toX(ganttAddDays(from.end, 1));
+                        const y1 = rowY.get(from.id) || 0;
+                        const x2 = task.milestone ? toX(task.start) + unit / 2 - 8 : toX(task.start) - 1;
+                        const y2 = rowY.get(task.id) || 0;
+                        const elbow = Math.max(x1 + 6, Math.min(x2 - 8, x1 + 10));
+                        return (
+                          <path
+                            key={`${id}-${task.id}`}
+                            d={`M${x1} ${y1}H${elbow}V${y2}H${x2}`}
+                            fill="none"
+                            stroke="#f97316"
+                            strokeWidth="1.3"
+                            strokeOpacity={active === null || current?.id === task.id || current?.id === id ? "0.85" : "0.2"}
+                            markerEnd="url(#gantt-arrow)"
+                          />
+                        );
+                      })
+                    )}
+
+                    {/* Tasks and Milestones Bars */}
+                    {ordered.map((task, index) => {
+                      const y = rowY.get(task.id) || 0;
+                      const dim = active !== null && active !== index;
+                      if (task.milestone) {
+                        const x = toX(task.start) + unit / 2;
+                        return (
+                          <path
+                            key={task.id}
+                            d={`M${x} ${y - 7}L${x + 7} ${y}L${x} ${y + 7}L${x - 7} ${y}z`}
+                            className="fill-amber-400 transition-opacity"
+                            opacity={dim ? 0.4 : 1}
+                          />
+                        );
+                      }
+                      const x = toX(task.start);
+                      const barWidth = Math.max(unit, toX(ganttAddDays(task.end, 1)) - x);
+                      const progress = Math.min(1, Math.max(0, task.progress || 0));
+                      const barHeight = Math.min(20, rowHeight - 12);
+                      return (
+                        <g key={task.id} opacity={dim ? 0.5 : 1}>
+                          <rect
+                            x={x}
+                            y={y - barHeight / 2}
+                            width={barWidth}
+                            height={barHeight}
+                            rx={5}
+                            fill="rgba(249, 115, 22, 0.18)"
+                          />
+                          <rect
+                            x={x}
+                            y={y - barHeight / 2}
+                            width={barWidth * progress}
+                            height={barHeight}
+                            rx={5}
+                            fill="#f97316"
+                          />
+                          {active === index && (
+                            <rect
+                              x={x - 1.5}
+                              y={y - barHeight / 2 - 1.5}
+                              width={barWidth + 3}
+                              height={barHeight + 3}
+                              rx={6}
+                              fill="none"
+                              stroke="#ea580c"
+                              strokeWidth="1.5"
+                            />
+                          )}
+                        </g>
+                      );
+                    })}
+
+                    {/* Today marker */}
+                    {today >= origin && toX(today) <= chartWidth && (
+                      <g>
+                        <line
+                          x1={toX(today) + unit / 2}
+                          x2={toX(today) + unit / 2}
+                          y1={GANTT_HEADER - 4}
+                          y2={height}
+                          stroke="#ef4444"
+                          strokeWidth="1.5"
+                        />
+                        <rect
+                          x={toX(today) + unit / 2 - 16}
+                          y={GANTT_HEADER - 12}
+                          width={32}
+                          height={12}
+                          rx={6}
+                          fill="#ef4444"
+                        />
+                        <text
+                          x={toX(today) + unit / 2}
+                          y={GANTT_HEADER - 6}
+                          textAnchor="middle"
+                          dominantBaseline="middle"
+                          className="fill-white text-[8px] font-bold"
+                        >
+                          Today
+                        </text>
+                      </g>
+                    )}
+                  </svg>
+                </div>
+              </div>
+            </div>
+
+            {/* Hover Tooltip Popup */}
+            {current && (
+              <div
+                style={{
+                  position: 'absolute',
+                  left: Math.max(120, Math.min(width - 160, toX(current.start) - scrollLeft + 140)),
+                  top: Math.max(10, (rowY.get(current.id) || 0) - 45),
+                }}
+                className="pointer-events-none z-30 rounded-xl border border-black/10 dark:border-white/10 bg-white/95 dark:bg-[#121217]/95 p-2.5 text-xs text-slate-800 dark:text-white shadow-xl backdrop-blur-md"
+              >
+                <div className="font-bold text-orange-600 dark:text-orange-400 mb-1">{current.label}</div>
+                <div className="flex justify-between gap-4 text-[11px] text-gray-500 dark:text-gray-400">
+                  <span>Status:</span>
+                  <span className="font-semibold text-slate-700 dark:text-gray-200">
+                    {current.milestone ? 'Milestone Complete' : `${Math.round((current.progress || 0) * 100)}% Complete`}
+                  </span>
+                </div>
+              </div>
+            )}
+          </div>
+        </div>
+      );
+    }
+
+    function App() {
+      // ── Theme State (Default Dark, persists in localStorage) ──────────
+      const [theme, setTheme] = useState(() => localStorage.getItem('theme') || 'dark');
+
+      useEffect(() => {
+        const root = document.documentElement;
+        if (theme === 'dark') {
+          root.classList.add('dark');
+        } else {
+          root.classList.remove('dark');
+        }
+        localStorage.setItem('theme', theme);
+      }, [theme]);
+
+      const handleSkyToggle = (isNight) => {
+        setTheme(isNight ? 'dark' : 'light');
+      };
+
+      // ── States ────────────────────────────────────────────────────────
+      const [stats, setStats] = useState({
+        applied_today: 0,
+        skipped_today: 0,
+        total_applied: 0,
+        daily_cap: 20,
+        daily_progress: 0,
+        last_boost: null,
+        runs: [],
+        chart: { labels: [], applied: [], skipped: [] }
+      });
+
+      const [jobs, setJobs] = useState([]);
+      const [jobFilter, setJobFilter] = useState('all');
+      const [activeTab, setActiveTab] = useState('jobs');
+      const [running, setRunning] = useState({});
+      const [logs, setLogs] = useState([]);
+      const [connected, setConnected] = useState(false);
+      const [sessionInfo, setSessionInfo] = useState(null);
+      const [connectOpen, setConnectOpen] = useState(false);
+      const [profileMenuOpen, setProfileMenuOpen] = useState(false);
+      const profileMenuRef = useRef(null);
+
+      useEffect(() => {
+        const handleClickOutside = (e) => {
+          if (profileMenuRef.current && !profileMenuRef.current.contains(e.target)) {
+            setProfileMenuOpen(false);
+          }
+        };
+        document.addEventListener('mousedown', handleClickOutside);
+        return () => document.removeEventListener('mousedown', handleClickOutside);
+      }, []);
+
+      const fetchSession = async () => {
+        try {
+          const r = await fetch('/api/session-status');
+          const data = await r.json();
+          setSessionInfo(data);
+        } catch (e) { }
+      };
+
+      const handleDisconnect = async () => {
+        try {
+          const r = await fetch('/api/disconnect', { method: 'POST' });
+          const d = await r.json();
+          if (d.ok) {
+            notify('success', 'Account Disconnected', 'Your credentials and session were cleared.');
+            setSessionInfo({ configured: false, email: '' });
+            setProfileMenuOpen(false);
+            setConnectOpen(true);
+          } else {
+            notify('error', 'Error', d.error || 'Failed to disconnect account.');
+          }
+        } catch (err) {
+          notify('error', 'Network Error', 'Server unreachable.');
+        }
+      };
+
+      const handleLogout = async () => {
+        await handleDisconnect();
+        window.location.reload();
+      };
+
+      // Load session info once
+      useEffect(() => {
+        fetchSession();
+      }, []);
+
+      // Splashed Push Notifications ref & helper
+      const notifyRef = useRef(null);
+      const prevRunningRef = useRef({});
+
+      const notify = (type, title, content) => {
+        if (notifyRef.current) {
+          notifyRef.current.createNotification(type, title, content);
+        }
+      };
+
+      // Pagination States (10 items per page)
+      const [jobsPage, setJobsPage] = useState(1);
+      const [runsPage, setRunsPage] = useState(1);
+      const itemsPerPage = 10;
+
+      const [config, setConfig] = useState({
+        keywords: [],
+        locations: [],
+        experience_years: 0,
+        min_salary_lpa: 0,
+        max_applications_per_run: 15,
+        max_applications_per_day: 20,
+        include_words: [],
+        exclude_words: [],
+        exclude_companies: []
+      });
+
+      const chartRef = useRef(null);
+      const chartInstance = useRef(null);
+      const logContainerRef = useRef(null);
+
+      // ── API Fetchers ──────────────────────────────────────────────────
+      const fetchStats = async () => {
+        try {
+          const res = await fetch('/api/stats');
+          const data = await res.json();
+          setStats(data);
+        } catch (err) {
+          console.error("Failed to load stats", err);
+        }
+      };
+
+      const fetchJobs = async () => {
+        try {
+          const res = await fetch(`/api/jobs?status=${jobFilter}&limit=100`);
+          const data = await res.json();
+          setJobs(data);
+          setJobsPage(1);
+        } catch (err) {
+          console.error("Failed to load jobs", err);
+        }
+      };
+
+      const fetchConfig = async () => {
+        try {
+          const res = await fetch('/api/config');
+          const data = await res.json();
+          setConfig(data);
+        } catch (err) {
+          console.error("Failed to load config", err);
+        }
+      };
+
+      const fetchStatus = async () => {
+        try {
+          const res = await fetch('/api/status');
+          const data = await res.json();
+
+          // Auto alert on action completion
+          Object.entries(prevRunningRef.current).forEach(([mode, prev]) => {
+            if (prev && prev.active && data[mode] && !data[mode].active) {
+              notify('success', `${mode.toUpperCase()} Completed`, 'Automation finished successfully. Results updated.');
+              fetchStats();
+              fetchJobs();
+            }
+          });
+          prevRunningRef.current = data;
+          setRunning(data);
+        } catch (err) { }
+      };
+
+      // ── Action Trigger ────────────────────────────────────────────────
+      const triggerAction = async (mode, dryRun = false) => {
+        try {
+          const res = await fetch(`/api/action/${mode}`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ dry_run: dryRun })
+          });
+          const data = await res.json();
+          if (data.error) {
+            notify('error', 'Execution Blocked', data.error);
+          } else {
+            notify(
+              'warning',
+              `${mode.toUpperCase()} Initiated`,
+              dryRun ? 'Dry-run preview running. Streaming live logs below.' : 'Browser automation active. Live progress streaming below.'
+            );
+            fetchStatus();
+          }
+        } catch (err) {
+          notify('error', 'Launch Failed', 'Failed to launch background automation process');
+        }
+      };
+
+      // ── Save Config ───────────────────────────────────────────────────
+      const handleSaveConfig = async (e) => {
+        e.preventDefault();
+        try {
+          await fetch('/api/config', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(config)
+          });
+          notify('success', 'Configuration Updated', 'Filter and run settings successfully saved!');
+        } catch (err) {
+          notify('error', 'Save Failed', 'Failed to save configuration');
+        }
+      };
+
+      // ── SSE Logs Setup ────────────────────────────────────────────────
+      useEffect(() => {
+        const es = new EventSource('/api/logs/stream');
+        es.onopen = () => setConnected(true);
+        es.onerror = () => setConnected(false);
+        es.onmessage = (event) => {
+          try {
+            const data = JSON.parse(event.data);
+            if (data.log) {
+              setLogs((prev) => [...prev.slice(-250), data.log]);
+            }
+          } catch (e) { }
+        };
+        return () => es.close();
+      }, []);
+
+      // Auto-scroll log window
+      useEffect(() => {
+        if (logContainerRef.current) {
+          logContainerRef.current.scrollTop = logContainerRef.current.scrollHeight;
+        }
+      }, [logs]);
+
+      // Lifecycle Intervals
+      useEffect(() => {
+        fetchStats();
+        fetchJobs();
+        fetchConfig();
+        fetchStatus();
+
+        const statusInterval = setInterval(fetchStatus, 3000);
+        const statsInterval = setInterval(() => {
+          fetchStats();
+          fetchJobs();
+        }, 12000);
+
+        return () => {
+          clearInterval(statusInterval);
+          clearInterval(statsInterval);
+        };
+      }, [jobFilter]);
+
+      // ── Chart.js Lifecycle (Theme-aware) ──────────────────────────────
+      useEffect(() => {
+        if (!chartRef.current || !stats.chart) return;
+
+        if (chartInstance.current) {
+          chartInstance.current.destroy();
+        }
+
+        const isDark = theme === 'dark';
+        const textColor = isDark ? '#9ca3af' : '#64748b';
+        const gridColor = isDark ? 'rgba(255, 255, 255, 0.05)' : 'rgba(0, 0, 0, 0.05)';
+
+        const ctx = chartRef.current.getContext('2d');
+        chartInstance.current = new Chart(ctx, {
+          type: 'bar',
+          data: {
+            labels: stats.chart.labels || [],
+            datasets: [
+              {
+                label: 'Applied',
+                data: stats.chart.applied || [],
+                backgroundColor: 'rgba(34, 197, 94, 0.75)',
+                borderRadius: 6,
+                barPercentage: 0.6
+              },
+              {
+                label: 'Skipped',
+                data: stats.chart.skipped || [],
+                backgroundColor: 'rgba(234, 179, 8, 0.4)',
+                borderRadius: 6,
+                barPercentage: 0.6
+              }
+            ]
+          },
+          options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+              legend: {
+                labels: { color: textColor, font: { size: 12, family: 'Plus Jakarta Sans' } }
+              }
+            },
+            scales: {
+              x: {
+                ticks: { color: textColor, font: { size: 11 } },
+                grid: { display: false }
+              },
+              y: {
+                beginAtZero: true,
+                ticks: { color: textColor, stepSize: 5 },
+                grid: { color: gridColor }
+              }
+            }
+          }
+        });
+
+        return () => {
+          if (chartInstance.current) chartInstance.current.destroy();
+        };
+      }, [stats.chart, theme]);
+
+      // Process detection
+      const isAnyActive = Object.values(running).some((r) => r.active);
+      const activeRunningName = Object.entries(running).find(([_, r]) => r.active)?.[0];
+      const isConnected = Boolean(sessionInfo?.configured);
+
+      // ── Dynamic Milestones for Gantt Roadmap (21st.dev/r/klyv-ui/gantt-chart) ──
+      const dynamicMilestones = useMemo(() => {
+        const t0 = ganttStartOfDay(new Date());
+        const isAuth = Boolean(sessionInfo?.configured);
+        const appliedToday = stats.applied_today || 0;
+        const dailyCap = stats.daily_cap || 20;
+        const applyRatio = Math.min(1.0, dailyCap > 0 ? (appliedToday / dailyCap) : 0);
+        const hasBoost = Boolean(stats.last_boost);
+        const skipped = stats.skipped_today || 0;
+        const totalApplied = stats.total_applied || 0;
+
+        return [
+          {
+            id: "auth",
+            label: isAuth ? `Naukri Vault Connected (${sessionInfo?.email || 'Active'})` : "Connect Naukri Account",
+            lane: "Pipeline Setup",
+            start: ganttAddDays(t0, -3),
+            end: ganttAddDays(t0, -1),
+            progress: isAuth ? 1.0 : 0.0,
+          },
+          {
+            id: "skills",
+            label: isAuth ? "Resume Skills & Keywords Synchronized" : "Skill Extraction Pending Auth",
+            lane: "Pipeline Setup",
+            start: ganttAddDays(t0, -2),
+            end: ganttAddDays(t0, 0),
+            progress: isAuth ? 1.0 : 0.25,
+            dependsOn: ["auth"],
+          },
+          {
+            id: "boost",
+            label: hasBoost ? "Headline Timestamp Touched (Top Rank)" : "Profile Freshness Boost",
+            lane: "Profile Ranking",
+            start: ganttAddDays(t0, 0),
+            end: ganttAddDays(t0, 0),
+            milestone: true,
+            dependsOn: ["skills"],
+          },
+          {
+            id: "filter",
+            label: `Negative Keyword Guard (${skipped} Filtered Today)`,
+            lane: "Daily Automation",
+            start: ganttAddDays(t0, -1),
+            end: ganttAddDays(t0, 1),
+            progress: skipped > 0 ? 1.0 : (isAuth ? 0.75 : 0.15),
+            dependsOn: ["auth"],
+          },
+          {
+            id: "apply",
+            label: `Auto-Apply Daily Progress (${appliedToday}/${dailyCap} Applied)`,
+            lane: "Daily Automation",
+            start: ganttAddDays(t0, 0),
+            end: ganttAddDays(t0, 2),
+            progress: applyRatio,
+            dependsOn: ["filter", "boost"],
+          },
+          {
+            id: "reach",
+            label: `Recruiter Search Visibility Ranking (${totalApplied} Cumulative App)`,
+            lane: "Recruiter Pipeline",
+            start: ganttAddDays(t0, 1),
+            end: ganttAddDays(t0, 4),
+            progress: totalApplied > 0 ? 0.85 : 0.35,
+            dependsOn: ["apply"],
+          },
+          {
+            id: "interview",
+            label: "Recruiter Shortlisting & Interview Calls",
+            lane: "Recruiter Pipeline",
+            start: ganttAddDays(t0, 4),
+            end: ganttAddDays(t0, 4),
+            milestone: true,
+            dependsOn: ["reach"],
+          },
+        ];
+      }, [sessionInfo, stats]);
+
+      // ── Pagination Calculation ────────────────────────────────────────
+      const totalJobPages = Math.max(1, Math.ceil(jobs.length / itemsPerPage));
+      const displayedJobs = jobs.slice((jobsPage - 1) * itemsPerPage, jobsPage * itemsPerPage);
+
+      const totalRuns = stats.runs || [];
+      const totalRunPages = Math.max(1, Math.ceil(totalRuns.length / itemsPerPage));
+      const displayedRuns = totalRuns.slice((runsPage - 1) * itemsPerPage, runsPage * itemsPerPage);
+
+      return (
+        <div className="min-h-screen flex flex-col">
+          {/* ═══ Header / Navbar with Brand Logo & Sky Toggle ═══ */}
+          <header className="glass sticky top-0 z-50 px-6 py-2 flex items-center justify-between border-b border-black/[0.06] dark:border-white/5">
+            <div className="flex items-center gap-3">
+              {/* Dynamic Theme Logo (Transparent, Enlarged) */}
+              <div className="flex items-center cursor-pointer select-none">
+                <img
+                  src={theme === 'dark' ? '/static/images/logo-dark.svg' : '/static/images/logo-light.svg'}
+                  alt="KLyck Job Assistant"
+                  className="h-12 md:h-14 w-auto object-contain transition-all duration-300 drop-shadow-sm hover:scale-105"
+                />
+              </div>
+            </div>
+
+            <div className="flex items-center gap-4">
+              {/* Sky Toggle Theme Switcher Component */}
+              <div className="flex items-center gap-2 px-2 py-1 rounded-full bg-black/[0.03] dark:bg-white/[0.04] border border-black/[0.06] dark:border-white/5">
+                <SkyToggle checked={theme === 'dark'} onChange={handleSkyToggle} />
+              </div>
+
+              {/* Profile Account Dropdown */}
+              {sessionInfo && sessionInfo.email ? (
+                <div className="relative" ref={profileMenuRef}>
+                  <button
+                    onClick={() => setProfileMenuOpen(!profileMenuOpen)}
+                    className="flex items-center gap-2 px-3 py-1.5 rounded-full bg-black/[0.04] dark:bg-white/[0.04] border border-black/[0.08] dark:border-white/10 hover:border-orange-500/40 dark:hover:border-orange-500/40 transition shadow-sm"
+                  >
+                    <div className="w-5 h-5 rounded-full bg-gradient-to-tr from-orange-500 to-amber-500 flex items-center justify-center text-white text-[10px] font-bold shadow-sm">
+                      {sessionInfo.email[0].toUpperCase()}
+                    </div>
+                    <span className="text-xs font-semibold text-slate-700 dark:text-gray-200">{sessionInfo.email}</span>
+                    <svg className={`w-3.5 h-3.5 text-gray-400 transition-transform ${profileMenuOpen ? 'rotate-180 text-orange-500' : ''}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 9l-7 7-7-7" />
+                    </svg>
+                  </button>
+
+                  {/* Dropdown Menu */}
+                  {profileMenuOpen && (
+                    <div className="absolute right-0 mt-2 w-72 rounded-2xl glass-card bg-white dark:bg-[#121217] border border-black/10 dark:border-white/10 shadow-2xl p-2 z-50 animate-in fade-in zoom-in-95 duration-150">
+                      {/* Account Summary Header */}
+                      <div className="p-3 border-b border-black/5 dark:border-white/5 bg-black/[0.02] dark:bg-white/[0.02] rounded-xl mb-1.5">
+                        <div className="flex items-center justify-between">
+                          <span className="text-[11px] font-semibold uppercase tracking-wider text-gray-500 dark:text-gray-400">Account Details</span>
+                          <span className="inline-flex items-center gap-1.5 text-[10px] font-semibold text-emerald-600 dark:text-emerald-400 bg-emerald-500/10 dark:bg-emerald-400/10 px-2 py-0.5 rounded-full font-mono">
+                            <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" /> Active
+                          </span>
+                        </div>
+                        <div className="mt-2 text-xs font-bold text-slate-800 dark:text-white truncate">
+                          {sessionInfo.email}
+                        </div>
+                        <div className="text-[11px] text-gray-500 flex items-center gap-1 mt-0.5">
+                          <span className="w-2 h-2 rounded-full bg-orange-500 inline-block" /> Platform: <b className="text-slate-700 dark:text-gray-300">Naukri.com</b>
+                        </div>
+                      </div>
+
+                      {/* Menu Actions */}
+                      <div className="space-y-1">
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setProfileMenuOpen(false);
+                            setConnectOpen(true);
+                            window.scrollTo({ top: 0, behavior: 'smooth' });
+                          }}
+                          className="w-full flex items-center gap-2.5 px-3 py-2 text-xs font-medium text-slate-700 dark:text-gray-300 hover:text-orange-500 dark:hover:text-orange-400 hover:bg-orange-500/10 dark:hover:bg-orange-500/10 rounded-xl transition"
+                        >
+                          <svg className="w-4 h-4 text-orange-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" /></svg>
+                          <span>Switch / Connect Platform</span>
+                        </button>
+
+                        <button
+                          type="button"
+                          onClick={handleDisconnect}
+                          className="w-full flex items-center gap-2.5 px-3 py-2 text-xs font-medium text-amber-600 dark:text-amber-400 hover:bg-amber-500/10 rounded-xl transition"
+                        >
+                          <svg className="w-4 h-4 text-amber-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M18.364 18.364A9 9 0 005.636 5.636m12.728 12.728A9 9 0 015.636 5.636m12.728 12.728L5.636 5.636" /></svg>
+                          <span>Disconnect Account</span>
+                        </button>
+
+                        <div className="my-1 border-t border-black/5 dark:border-white/5" />
+
+                        <button
+                          type="button"
+                          onClick={handleLogout}
+                          className="w-full flex items-center gap-2.5 px-3 py-2 text-xs font-medium text-rose-600 dark:text-rose-400 hover:bg-rose-500/10 rounded-xl transition"
+                        >
+                          <svg className="w-4 h-4 text-rose-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" /></svg>
+                          <span>Logout & Reset</span>
+                        </button>
+                      </div>
+                    </div>
+                  )}
+                </div>
+              ) : (
+                <button
+                  onClick={() => {
+                    setConnectOpen(true);
+                    window.scrollTo({ top: 0, behavior: 'smooth' });
+                  }}
+                  className="flex items-center gap-2 px-3 py-1.5 rounded-full bg-orange-500/10 hover:bg-orange-500/20 text-orange-600 dark:text-orange-400 border border-orange-500/30 text-xs font-bold transition shadow-sm"
+                >
+                  <span className="w-2 h-2 rounded-full bg-orange-500" />
+                  Connect Naukri
+                </button>
+              )}
+
+
+
+              <button
+                onClick={() => { fetchStats(); fetchJobs(); }}
+                className="p-2 rounded-xl bg-black/[0.04] dark:bg-white/[0.03] hover:bg-black/[0.08] dark:hover:bg-white/[0.08] text-slate-600 dark:text-gray-400 hover:text-slate-900 dark:hover:text-white transition border border-black/[0.06] dark:border-white/5"
+                title="Refresh Metrics"
+              >
+                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+                </svg>
+              </button>
+            </div>
+          </header>
+
+          <main className="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 py-7 space-y-6">
+
+            {/* ═══ Modern & Stunning Hero Section with Dynamic Connect Box ═══ */}
+            <HeroSection
+              sessionInfo={sessionInfo}
+              connectOpen={connectOpen}
+              setConnectOpen={setConnectOpen}
+              onConnectSuccess={() => {
+                fetchSession();
+                fetchStats();
+                fetchJobs();
+                fetchConfig();
+              }}
+              notify={notify}
+            />
+
+
+
+            {/* ═══ Quick Action Buttons (Disabled when disconnected) ═══ */}
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-3.5">
+              <button
+                disabled={!isConnected || isAnyActive}
+                onClick={() => {
+                  if (!isConnected) {
+                    notify('warning', 'Connect Account Required', 'Please connect your Naukri account above first.');
+                    setConnectOpen(true);
+                    window.scrollTo({ top: 0, behavior: 'smooth' });
+                    return;
+                  }
+                  triggerAction('boost');
+                }}
+                className={`group glass-card rounded-2xl p-4 flex flex-col items-start gap-3 transition relative overflow-hidden ${!isConnected
+                  ? 'opacity-40 grayscale-[40%] cursor-not-allowed border-dashed border-gray-400/20'
+                  : 'hover:bg-brand-500/[0.08] hover:border-brand-500/30'
+                  } disabled:opacity-40 disabled:cursor-not-allowed`}
+              >
+                {!isConnected && (
+                  <span className="absolute top-2.5 right-2.5 flex items-center gap-1 text-[10px] text-amber-500/90 bg-amber-500/10 px-2 py-0.5 rounded-full font-mono font-semibold">
+                    <LockIcon /> Locked
+                  </span>
+                )}
+                <div className="w-10 h-10 rounded-xl bg-indigo-500/10 flex items-center justify-center text-indigo-600 dark:text-indigo-400 group-hover:scale-110 transition">
+                  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M13 10V3L4 14h7v7l9-11h-7z" /></svg>
+                </div>
+                <div>
+                  <div className="text-sm font-bold text-slate-900 dark:text-white group-hover:text-brand-600 dark:group-hover:text-brand-300">Boost Profile</div>
+                  <div className="text-xs text-slate-500 dark:text-gray-500">Touch headline timestamp</div>
+                </div>
+              </button>
+
+              <button
+                disabled={!isConnected || isAnyActive}
+                onClick={() => {
+                  if (!isConnected) {
+                    notify('warning', 'Connect Account Required', 'Please connect your Naukri account above first.');
+                    setConnectOpen(true);
+                    window.scrollTo({ top: 0, behavior: 'smooth' });
+                    return;
+                  }
+                  triggerAction('apply');
+                }}
+                className={`group glass-card rounded-2xl p-4 flex flex-col items-start gap-3 transition relative overflow-hidden ${!isConnected
+                  ? 'opacity-40 grayscale-[40%] cursor-not-allowed border-dashed border-gray-400/20'
+                  : 'hover:bg-emerald-500/[0.08] hover:border-emerald-500/30'
+                  } disabled:opacity-40 disabled:cursor-not-allowed`}
+              >
+                {!isConnected && (
+                  <span className="absolute top-2.5 right-2.5 flex items-center gap-1 text-[10px] text-amber-500/90 bg-amber-500/10 px-2 py-0.5 rounded-full font-mono font-semibold">
+                    <LockIcon /> Locked
+                  </span>
+                )}
+                <div className="w-10 h-10 rounded-xl bg-emerald-500/10 flex items-center justify-center text-emerald-600 dark:text-emerald-400 group-hover:scale-110 transition">
+                  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
+                </div>
+                <div>
+                  <div className="text-sm font-bold text-slate-900 dark:text-white group-hover:text-emerald-600 dark:group-hover:text-emerald-300">Auto Apply</div>
+                  <div className="text-xs text-slate-500 dark:text-gray-500">Run search & apply sequence</div>
+                </div>
+              </button>
+
+              <button
+                disabled={!isConnected || isAnyActive}
+                onClick={() => {
+                  if (!isConnected) {
+                    notify('warning', 'Connect Account Required', 'Please connect your Naukri account above first.');
+                    setConnectOpen(true);
+                    window.scrollTo({ top: 0, behavior: 'smooth' });
+                    return;
+                  }
+                  triggerAction('sync');
+                }}
+                className={`group glass-card rounded-2xl p-4 flex flex-col items-start gap-3 transition relative overflow-hidden ${!isConnected
+                  ? 'opacity-40 grayscale-[40%] cursor-not-allowed border-dashed border-gray-400/20'
+                  : 'hover:bg-cyan-500/[0.08] hover:border-cyan-500/30'
+                  } disabled:opacity-40 disabled:cursor-not-allowed`}
+              >
+                {!isConnected && (
+                  <span className="absolute top-2.5 right-2.5 flex items-center gap-1 text-[10px] text-amber-500/90 bg-amber-500/10 px-2 py-0.5 rounded-full font-mono font-semibold">
+                    <LockIcon /> Locked
+                  </span>
+                )}
+                <div className="w-10 h-10 rounded-xl bg-cyan-500/10 flex items-center justify-center text-cyan-400 group-hover:scale-110 transition">
+                  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" /></svg>
+                </div>
+                <div>
+                  <div className="text-sm font-bold text-slate-900 dark:text-white group-hover:text-cyan-600 dark:group-hover:text-cyan-300">Sync Resume</div>
+                  <div className="text-xs text-slate-500 dark:text-gray-500">Extract skills from Naukri</div>
+                </div>
+              </button>
+
+              <button
+                disabled={!isConnected || isAnyActive}
+                onClick={() => {
+                  if (!isConnected) {
+                    notify('warning', 'Connect Account Required', 'Please connect your Naukri account above first.');
+                    setConnectOpen(true);
+                    window.scrollTo({ top: 0, behavior: 'smooth' });
+                    return;
+                  }
+                  triggerAction('apply', true);
+                }}
+                className={`group glass-card rounded-2xl p-4 flex flex-col items-start gap-3 transition relative overflow-hidden ${!isConnected
+                  ? 'opacity-40 grayscale-[40%] cursor-not-allowed border-dashed border-gray-400/20'
+                  : 'hover:bg-amber-500/[0.08] hover:border-amber-500/30'
+                  } disabled:opacity-40 disabled:cursor-not-allowed`}
+              >
+                {!isConnected && (
+                  <span className="absolute top-2.5 right-2.5 flex items-center gap-1 text-[10px] text-amber-500/90 bg-amber-500/10 px-2 py-0.5 rounded-full font-mono font-semibold">
+                    <LockIcon /> Locked
+                  </span>
+                )}
+                <div className="w-10 h-10 rounded-xl bg-amber-500/10 flex items-center justify-center text-amber-600 dark:text-amber-400 group-hover:scale-110 transition">
+                  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" /><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" /></svg>
+                </div>
+                <div>
+                  <div className="text-sm font-bold text-slate-900 dark:text-white group-hover:text-amber-600 dark:group-hover:text-amber-300">Dry Run</div>
+                  <div className="text-xs text-slate-500 dark:text-gray-500">Preview without applying</div>
+                </div>
+              </button>
+            </div>
+
+            {/* ═══ Real-Time Statistics Cards ═══ */}
+            <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+              <div className="glass-card rounded-2xl p-5">
+                <div className="flex items-center justify-between text-xs text-slate-500 dark:text-gray-400 font-medium mb-3 uppercase tracking-wider">
+                  <span>Applied Today</span>
+                  <div className="w-7 h-7 rounded-lg bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 flex items-center justify-center font-bold">✓</div>
+                </div>
+                <div className="text-3xl font-extrabold text-slate-900 dark:text-white">{stats.applied_today}</div>
+                <div className="mt-3">
+                  <div className="flex justify-between text-[11px] text-slate-500 dark:text-gray-400 mb-1">
+                    <span>Daily Cap Progress</span>
+                    <span className="font-semibold">{stats.applied_today} / {stats.daily_cap}</span>
+                  </div>
+                  <div className="w-full h-1.5 bg-slate-200 dark:bg-surface-900 rounded-full overflow-hidden">
+                    <div
+                      className="h-full bg-emerald-500 dark:bg-emerald-400 rounded-full transition-all duration-500"
+                      style={{ width: `${Math.min(100, (stats.applied_today / (stats.daily_cap || 20)) * 100)}%` }}
+                    />
+                  </div>
+                </div>
+              </div>
+
+              <div className="glass-card rounded-2xl p-5">
+                <div className="flex items-center justify-between text-xs text-slate-500 dark:text-gray-400 font-medium mb-3 uppercase tracking-wider">
+                  <span>Filtered / Skipped</span>
+                  <div className="w-7 h-7 rounded-lg bg-amber-500/10 text-amber-600 dark:text-amber-400 flex items-center justify-center font-bold">⊘</div>
+                </div>
+                <div className="text-3xl font-extrabold text-slate-900 dark:text-white">{stats.skipped_today}</div>
+                <p className="text-xs text-slate-500 dark:text-gray-500 mt-3">Filtered by keywords/companies</p>
+              </div>
+
+              <div className="glass-card rounded-2xl p-5">
+                <div className="flex items-center justify-between text-xs text-slate-500 dark:text-gray-400 font-medium mb-3 uppercase tracking-wider">
+                  <span>Total Applied</span>
+                  <div className="w-7 h-7 rounded-lg bg-brand-500/10 text-brand-600 dark:text-brand-400 flex items-center justify-center font-bold">∑</div>
+                </div>
+                <div className="text-3xl font-extrabold text-slate-900 dark:text-white">{stats.total_applied}</div>
+                <p className="text-xs text-slate-500 dark:text-gray-500 mt-3">Cumulative applications in DB</p>
+              </div>
+
+              <div className="glass-card rounded-2xl p-5">
+                <div className="flex items-center justify-between text-xs text-slate-500 dark:text-gray-400 font-medium mb-3 uppercase tracking-wider">
+                  <span>Last Boost Time</span>
+                  <div className="w-7 h-7 rounded-lg bg-purple-500/10 text-purple-600 dark:text-purple-400 flex items-center justify-center font-bold">⚡</div>
+                </div>
+                <div className="text-sm font-semibold text-slate-900 dark:text-white truncate">
+                  {stats.last_boost ? new Date(stats.last_boost).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', day: 'numeric', month: 'short' }) : 'Never'}
+                </div>
+                <p className="text-xs text-slate-500 dark:text-gray-500 mt-3">Refreshes profile search ranking</p>
+              </div>
+            </div>
+
+            {/* ═══ 7-Day Application Trends Chart ═══ */}
+            <div className="glass-card rounded-2xl p-5 sm:p-6 flex flex-col">
+              <div className="flex items-center justify-between mb-4">
+                <div>
+                  <h3 className="text-sm font-bold text-slate-900 dark:text-white">7-Day Application Trends</h3>
+                  <p className="text-xs text-slate-500 dark:text-gray-400 mt-0.5">Daily breakdown of applications sent</p>
+                </div>
+                <span className="text-[11px] font-mono font-semibold px-2.5 py-1 rounded-full bg-black/[0.03] dark:bg-white/[0.04] text-slate-600 dark:text-gray-300">
+                  Last 7 Days
+                </span>
+              </div>
+              <div className="flex-1 min-h-[220px]">
+                <canvas ref={chartRef} />
+              </div>
+            </div>
+
+            {/* ═══ Dynamic Milestones & Automation Roadmap (21st.dev Gantt Chart) ═══ */}
+            <div className="glass-card rounded-2xl p-5 sm:p-6 shadow-sm border border-black/[0.06] dark:border-white/5 space-y-4">
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-black/[0.06] dark:border-white/5 pb-4">
+                <div>
+                  <div className="flex items-center gap-2">
+                    <span className="w-2.5 h-2.5 rounded-full bg-orange-500 animate-pulse" />
+                    <h3 className="text-base font-bold text-slate-900 dark:text-white">KLyck Automation Roadmap & Milestones</h3>
+                    <span className="text-[10px] font-mono font-semibold uppercase tracking-wider text-orange-600 dark:text-orange-400 bg-orange-500/10 px-2.5 py-0.5 rounded-full">
+                      Live Telemetry
+                    </span>
+                  </div>
+                  <p className="text-xs text-slate-500 dark:text-gray-400 mt-1">
+                    Dynamic timeline of account verification, skill sync, headline boost timestamps, keyword filters, and recruiter reach.
+                  </p>
+                </div>
+                <div className="flex items-center gap-2 text-xs">
+                  <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-black/[0.03] dark:bg-white/[0.04] text-slate-600 dark:text-gray-300 font-mono text-[11px]">
+                    <span className="w-2 h-2 rounded-sm bg-orange-500 inline-block" /> Active Progress
+                  </span>
+                  <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-black/[0.03] dark:bg-white/[0.04] text-slate-600 dark:text-gray-300 font-mono text-[11px]">
+                    <span className="w-2 h-2 rotate-45 bg-amber-500 inline-block" /> Milestone
+                  </span>
+                </div>
+              </div>
+
+              <GanttChartComponent
+                tasks={dynamicMilestones}
+                label="KLyck Naukri Automation Roadmap"
+                defaultZoom="week"
+                rowHeight={38}
+              />
+            </div>
+
+            {/* ═══ Data Tabs (Jobs / Settings / Runs) ═══ */}
+            <div className="glass-card rounded-2xl overflow-hidden">
+              <div className="flex items-center justify-between border-b border-black/[0.06] dark:border-white/5 px-6 pt-3">
+                <div className="flex gap-4">
+                  {['jobs', 'milestones', 'config', 'runs'].map((tab) => (
+                    <button
+                      key={tab}
+                      onClick={() => setActiveTab(tab)}
+                      className={`pb-3 text-sm font-semibold capitalize transition relative ${activeTab === tab ? 'text-brand-600 dark:text-brand-300' : 'text-slate-500 dark:text-gray-400 hover:text-slate-900 dark:hover:text-gray-200'
+                        }`}
+                    >
+                      {tab === 'config' ? 'Filter Settings' : tab === 'milestones' ? 'Roadmap' : `${tab} History`}
+                      {activeTab === tab && (
+                        <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-brand-500 rounded-full" />
+                      )}
+                    </button>
+                  ))}
+                </div>
+
+                {activeTab === 'jobs' && (
+                  <div className="flex items-center gap-3 pb-3">
+                    <select
+                      value={jobFilter}
+                      onChange={(e) => setJobFilter(e.target.value)}
+                      className="bg-slate-100 dark:bg-surface-900 border border-slate-300 dark:border-white/10 rounded-lg px-2.5 py-1 text-xs text-slate-800 dark:text-gray-300 focus:outline-none"
+                    >
+                      <option value="all">All Records</option>
+                      <option value="applied">Applied</option>
+                      <option value="skipped">Skipped</option>
+                    </select>
+                    <a
+                      href="/api/jobs/export"
+                      className="text-xs font-semibold text-brand-600 dark:text-brand-400 hover:underline flex items-center gap-1"
+                    >
+                      <span>Export CSV</span> ↓
+                    </a>
+                  </div>
+                )}
+              </div>
+
+              <div className="p-6">
+                {/* ═══ Jobs Tab with 10 Items Pagination ═══ */}
+                {activeTab === 'jobs' && (
+                  <div>
+                    <div className="overflow-x-auto">
+                      <table className="w-full text-left text-sm">
+                        <thead>
+                          <tr className="text-xs uppercase text-slate-400 dark:text-gray-500 border-b border-black/[0.06] dark:border-white/5">
+                            <th className="pb-3 pr-4">Status</th>
+                            <th className="pb-3 pr-4">Position Title</th>
+                            <th className="pb-3 pr-4">Company</th>
+                            <th className="pb-3 pr-4">Reason / Notes</th>
+                            <th className="pb-3">Timestamp</th>
+                          </tr>
+                        </thead>
+                        <tbody className="divide-y divide-black/[0.04] dark:divide-white/5">
+                          {displayedJobs.length === 0 ? (
+                            <tr>
+                              <td colSpan="5" className="py-8 text-center text-slate-400 dark:text-gray-500">
+                                No jobs logged yet. Run Auto Apply or Dry Run to populate.
+                              </td>
+                            </tr>
+                          ) : (
+                            displayedJobs.map((j, idx) => (
+                              <tr key={idx} className="hover:bg-black/[0.02] dark:hover:bg-white/[0.02] transition">
+                                <td className="py-3 pr-4">
+                                  <span className={`px-2.5 py-1 rounded-full text-[11px] font-semibold ${j.status === 'applied'
+                                    ? 'bg-emerald-500/15 text-emerald-700 dark:text-emerald-400 border border-emerald-500/25'
+                                    : 'bg-slate-200/60 dark:bg-white/5 text-slate-600 dark:text-gray-400 border border-slate-300 dark:border-white/5'
+                                    }`}>
+                                    {j.status}
+                                  </span>
+                                </td>
+                                <td className="py-3 pr-4 max-w-xs truncate font-medium text-slate-900 dark:text-white">
+                                  {j.url ? (
+                                    <a href={j.url} target="_blank" rel="noreferrer" className="hover:text-brand-600 dark:hover:text-brand-300 hover:underline">
+                                      {j.title || 'Untitled'}
+                                    </a>
+                                  ) : (
+                                    j.title || 'Untitled'
+                                  )}
+                                </td>
+                                <td className="py-3 pr-4 text-slate-600 dark:text-gray-400">{j.company || '—'}</td>
+                                <td className="py-3 pr-4 text-xs text-slate-500 dark:text-gray-500 max-w-[200px] truncate">
+                                  {j.reason || '—'}
+                                </td>
+                                <td className="py-3 text-xs text-slate-500 dark:text-gray-500 whitespace-nowrap">
+                                  {j.timestamp ? new Date(j.timestamp).toLocaleString([], { dateStyle: 'short', timeStyle: 'short' }) : '—'}
+                                </td>
+                              </tr>
+                            ))
+                          )}
+                        </tbody>
+                      </table>
+                    </div>
+
+                    {/* Pagination Bar (10 per page) */}
+                    {jobs.length > 0 && (
+                      <div className="flex items-center justify-between border-t border-black/[0.06] dark:border-white/5 pt-4 mt-2">
+                        <div className="text-xs text-slate-500 dark:text-gray-400">
+                          Showing <span className="font-semibold text-slate-900 dark:text-white">{Math.min((jobsPage - 1) * itemsPerPage + 1, jobs.length)}</span> to{' '}
+                          <span className="font-semibold text-slate-900 dark:text-white">{Math.min(jobsPage * itemsPerPage, jobs.length)}</span> of{' '}
+                          <span className="font-semibold text-slate-900 dark:text-white">{jobs.length}</span> jobs (10 per page)
+                        </div>
+
+                        <div className="flex items-center gap-1.5">
+                          <button
+                            onClick={() => setJobsPage(prev => Math.max(1, prev - 1))}
+                            disabled={jobsPage === 1}
+                            className="px-3 py-1.5 rounded-lg border border-slate-300 dark:border-white/10 text-xs font-semibold text-slate-700 dark:text-gray-300 hover:bg-black/[0.05] dark:hover:bg-white/[0.05] disabled:opacity-40 disabled:cursor-not-allowed transition"
+                          >
+                            Previous
+                          </button>
+
+                          {Array.from({ length: totalJobPages }, (_, i) => i + 1)
+                            .filter(page => page === 1 || page === totalJobPages || Math.abs(page - jobsPage) <= 1)
+                            .map((page, index, array) => {
+                              const showDots = index > 0 && page - array[index - 1] > 1;
+                              return (
+                                <React.Fragment key={page}>
+                                  {showDots && <span className="px-1 text-slate-400 text-xs">…</span>}
+                                  <button
+                                    onClick={() => setJobsPage(page)}
+                                    className={`w-7 h-7 rounded-lg text-xs font-semibold transition ${jobsPage === page
+                                      ? 'bg-brand-600 text-white shadow-sm'
+                                      : 'border border-slate-300 dark:border-white/10 text-slate-700 dark:text-gray-300 hover:bg-black/[0.05] dark:hover:bg-white/[0.05]'
+                                      }`}
+                                  >
+                                    {page}
+                                  </button>
+                                </React.Fragment>
+                              );
+                            })}
+
+                          <button
+                            onClick={() => setJobsPage(prev => Math.min(totalJobPages, prev + 1))}
+                            disabled={jobsPage === totalJobPages}
+                            className="px-3 py-1.5 rounded-lg border border-slate-300 dark:border-white/10 text-xs font-semibold text-slate-700 dark:text-gray-300 hover:bg-black/[0.05] dark:hover:bg-white/[0.05] disabled:opacity-40 disabled:cursor-not-allowed transition"
+                          >
+                            Next
+                          </button>
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                )}
+
+                {/* Milestones Tab View */}
+                {activeTab === 'milestones' && (
+                  <div className="space-y-6">
+                    <div className="p-4 rounded-xl bg-orange-500/5 border border-orange-500/20 flex items-center justify-between">
+                      <div>
+                        <h4 className="text-sm font-bold text-slate-900 dark:text-white flex items-center gap-2">
+                          <span className="w-2 h-2 rounded-full bg-orange-500 animate-ping" />
+                          KLyck Milestone Roadmap Telemetry
+                        </h4>
+                        <p className="text-xs text-slate-500 dark:text-gray-400 mt-1">
+                          Calculated in real-time from your active profile connection, daily apply caps, and recruiter reach index.
+                        </p>
+                      </div>
+                      <span className="text-xs font-mono px-3 py-1 rounded-full bg-orange-500/10 text-orange-600 dark:text-orange-400 font-bold">
+                        {stats.applied_today}/{stats.daily_cap || 20} Applied Today
+                      </span>
+                    </div>
+
+                    <GanttChartComponent
+                      tasks={dynamicMilestones}
+                      label="Milestone Pipeline"
+                      defaultZoom="week"
+                      rowHeight={40}
+                    />
+
+                    {/* Breakdown Cards */}
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4 pt-2">
+                      <div className="p-4 rounded-xl border border-black/5 dark:border-white/5 bg-black/[0.02] dark:bg-white/[0.02]">
+                        <div className="text-xs font-bold text-orange-600 dark:text-orange-400 uppercase tracking-wider mb-1">Phase 1: Setup & Sync</div>
+                        <p className="text-xs text-slate-600 dark:text-gray-300">
+                          {isConnected ? '✓ Credentials vaulted & resume skills extracted.' : 'Connect account to verify credential token and resume skills.'}
+                        </p>
+                      </div>
+                      <div className="p-4 rounded-xl border border-black/5 dark:border-white/5 bg-black/[0.02] dark:bg-white/[0.02]">
+                        <div className="text-xs font-bold text-indigo-600 dark:text-indigo-400 uppercase tracking-wider mb-1">Phase 2: Freshness Ranking</div>
+                        <p className="text-xs text-slate-600 dark:text-gray-300">
+                          {stats.last_boost ? `✓ Profile headline refreshed (${new Date(stats.last_boost).toLocaleDateString()}).` : 'Touch headline timestamp to move to top of recruiter searches.'}
+                        </p>
+                      </div>
+                      <div className="p-4 rounded-xl border border-black/5 dark:border-white/5 bg-black/[0.02] dark:bg-white/[0.02]">
+                        <div className="text-xs font-bold text-emerald-600 dark:text-emerald-400 uppercase tracking-wider mb-1">Phase 3: Automated Applications</div>
+                        <p className="text-xs text-slate-600 dark:text-gray-300">
+                          {stats.applied_today > 0 ? `✓ ${stats.applied_today} applications dispatched today with zero spam.` : 'Auto-apply engine searches matching criteria while skipping negative keywords.'}
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+                )}
+
+                {/* Configuration Tab View */}
+                {activeTab === 'config' && (
+                  <form onSubmit={handleSaveConfig} className="space-y-6 max-w-4xl">
+                    <div className="grid md:grid-cols-2 gap-6">
+                      <div className="space-y-4">
+                        <h4 className="text-xs font-bold uppercase tracking-wider text-brand-600 dark:text-brand-400">Search Target</h4>
+                        <div>
+                          <label className="text-xs text-slate-600 dark:text-gray-400 block mb-1">Keywords (comma separated)</label>
+                          <input
+                            type="text"
+                            value={config.keywords?.join(', ') || ''}
+                            onChange={(e) => setConfig({ ...config, keywords: e.target.value.split(',').map(s => s.trim()).filter(Boolean) })}
+                            className="w-full bg-slate-50 dark:bg-surface-900 border border-slate-300 dark:border-white/10 rounded-xl px-3.5 py-2 text-sm text-slate-900 dark:text-white focus:border-brand-500 focus:outline-none"
+                          />
+                        </div>
+                        <div>
+                          <label className="text-xs text-slate-600 dark:text-gray-400 block mb-1">Location</label>
+                          <input
+                            type="text"
+                            value={config.locations?.join(', ') || ''}
+                            onChange={(e) => setConfig({ ...config, locations: e.target.value.split(',').map(s => s.trim()).filter(Boolean) })}
+                            className="w-full bg-slate-50 dark:bg-surface-900 border border-slate-300 dark:border-white/10 rounded-xl px-3.5 py-2 text-sm text-slate-900 dark:text-white focus:border-brand-500 focus:outline-none"
+                          />
+                        </div>
+                        <div className="grid grid-cols-2 gap-3">
+                          <div>
+                            <label className="text-xs text-slate-600 dark:text-gray-400 block mb-1">Years Experience</label>
+                            <input
+                              type="number"
+                              value={config.experience_years ?? 0}
+                              onChange={(e) => setConfig({ ...config, experience_years: parseInt(e.target.value) || 0 })}
+                              className="w-full bg-slate-50 dark:bg-surface-900 border border-slate-300 dark:border-white/10 rounded-xl px-3.5 py-2 text-sm text-slate-900 dark:text-white focus:border-brand-500 focus:outline-none"
+                            />
+                          </div>
+                          <div>
+                            <label className="text-xs text-slate-600 dark:text-gray-400 block mb-1">Min Salary (LPA)</label>
+                            <input
+                              type="number"
+                              value={config.min_salary_lpa ?? 0}
+                              onChange={(e) => setConfig({ ...config, min_salary_lpa: parseInt(e.target.value) || 0 })}
+                              className="w-full bg-slate-50 dark:bg-surface-900 border border-slate-300 dark:border-white/10 rounded-xl px-3.5 py-2 text-sm text-slate-900 dark:text-white focus:border-brand-500 focus:outline-none"
+                            />
+                          </div>
+                        </div>
+                      </div>
+
+                      <div className="space-y-4">
+                        <h4 className="text-xs font-bold uppercase tracking-wider text-brand-600 dark:text-brand-400">Content Filtering</h4>
+                        <div>
+                          <label className="text-xs text-slate-600 dark:text-gray-400 block mb-1">Include Words (Skills required)</label>
+                          <textarea
+                            rows="2"
+                            value={config.include_words?.join(', ') || ''}
+                            onChange={(e) => setConfig({ ...config, include_words: e.target.value.split(',').map(s => s.trim()).filter(Boolean) })}
+                            className="w-full bg-slate-50 dark:bg-surface-900 border border-slate-300 dark:border-white/10 rounded-xl px-3.5 py-2 text-sm text-slate-900 dark:text-white focus:border-brand-500 focus:outline-none resize-none"
+                          />
+                        </div>
+                        <div>
+                          <label className="text-xs text-slate-600 dark:text-gray-400 block mb-1">Exclude Words (Title / description)</label>
+                          <textarea
+                            rows="2"
+                            value={config.exclude_words?.join(', ') || ''}
+                            onChange={(e) => setConfig({ ...config, exclude_words: e.target.value.split(',').map(s => s.trim()).filter(Boolean) })}
+                            className="w-full bg-slate-50 dark:bg-surface-900 border border-slate-300 dark:border-white/10 rounded-xl px-3.5 py-2 text-sm text-slate-900 dark:text-white focus:border-brand-500 focus:outline-none resize-none"
+                          />
+                        </div>
+                        <div className="grid grid-cols-2 gap-3">
+                          <div>
+                            <label className="text-xs text-slate-600 dark:text-gray-400 block mb-1">Max Apps / Run</label>
+                            <input
+                              type="number"
+                              value={config.max_applications_per_run ?? 15}
+                              onChange={(e) => setConfig({ ...config, max_applications_per_run: parseInt(e.target.value) || 15 })}
+                              className="w-full bg-slate-50 dark:bg-surface-900 border border-slate-300 dark:border-white/10 rounded-xl px-3.5 py-2 text-sm text-slate-900 dark:text-white focus:border-brand-500 focus:outline-none"
+                            />
+                          </div>
+                          <div>
+                            <label className="text-xs text-slate-600 dark:text-gray-400 block mb-1">Max Apps / Day</label>
+                            <input
+                              type="number"
+                              value={config.max_applications_per_day ?? 20}
+                              onChange={(e) => setConfig({ ...config, max_applications_per_day: parseInt(e.target.value) || 20 })}
+                              className="w-full bg-slate-50 dark:bg-surface-900 border border-slate-300 dark:border-white/10 rounded-xl px-3.5 py-2 text-sm text-slate-900 dark:text-white focus:border-brand-500 focus:outline-none"
+                            />
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+
+                    <div className="flex justify-end pt-2">
+                      <button
+                        type="submit"
+                        className="px-6 py-2.5 rounded-xl bg-brand-600 hover:bg-brand-500 text-white font-semibold text-sm transition shadow-lg shadow-brand-500/25"
+                      >
+                        Save Configuration
+                      </button>
+                    </div>
+                  </form>
+                )}
+
+                {/* ═══ Runs Tab with 10 Items Pagination ═══ */}
+                {activeTab === 'runs' && (
+                  <div>
+                    <div className="overflow-x-auto">
+                      <table className="w-full text-left text-sm">
+                        <thead>
+                          <tr className="text-xs uppercase text-slate-400 dark:text-gray-500 border-b border-black/[0.06] dark:border-white/5">
+                            <th className="pb-3 pr-4">Mode</th>
+                            <th className="pb-3 pr-4">Status</th>
+                            <th className="pb-3 pr-4">Applied</th>
+                            <th className="pb-3 pr-4">Skipped</th>
+                            <th className="pb-3 pr-4">Started</th>
+                            <th className="pb-3">Notes</th>
+                          </tr>
+                        </thead>
+                        <tbody className="divide-y divide-black/[0.04] dark:divide-white/5">
+                          {displayedRuns.length === 0 ? (
+                            <tr><td colSpan="6" className="py-8 text-center text-slate-400 dark:text-gray-500">No runs tracked yet.</td></tr>
+                          ) : (
+                            displayedRuns.map((r) => (
+                              <tr key={r.id} className="hover:bg-black/[0.02] dark:hover:bg-white/[0.02] transition">
+                                <td className="py-3 pr-4 font-semibold capitalize text-slate-900 dark:text-white">{r.mode}</td>
+                                <td className="py-3 pr-4">
+                                  <span className={`px-2.5 py-0.5 rounded-full text-xs font-semibold ${r.status === 'ok' ? 'bg-emerald-500/15 text-emerald-700 dark:text-emerald-400' :
+                                    r.status === 'running' ? 'bg-brand-500/15 text-brand-700 dark:text-brand-300' :
+                                      'bg-rose-500/15 text-rose-700 dark:text-rose-400'
+                                    }`}>
+                                    {r.status}
+                                  </span>
+                                </td>
+                                <td className="py-3 pr-4 text-emerald-600 dark:text-emerald-400 font-semibold">{r.applied}</td>
+                                <td className="py-3 pr-4 text-amber-600 dark:text-amber-400 font-semibold">{r.skipped}</td>
+                                <td className="py-3 pr-4 text-xs text-slate-500 dark:text-gray-400 whitespace-nowrap">
+                                  {r.started_at ? new Date(r.started_at).toLocaleString([], { dateStyle: 'short', timeStyle: 'short' }) : '—'}
+                                </td>
+                                <td className="py-3 text-xs text-slate-500 dark:text-gray-400 max-w-xs truncate">{r.notes || '—'}</td>
+                              </tr>
+                            ))
+                          )}
+                        </tbody>
+                      </table>
+                    </div>
+
+                    {/* Pagination Bar for Runs */}
+                    {totalRuns.length > 0 && (
+                      <div className="flex items-center justify-between border-t border-black/[0.06] dark:border-white/5 pt-4 mt-2">
+                        <div className="text-xs text-slate-500 dark:text-gray-400">
+                          Showing <span className="font-semibold text-slate-900 dark:text-white">{Math.min((runsPage - 1) * itemsPerPage + 1, totalRuns.length)}</span> to{' '}
+                          <span className="font-semibold text-slate-900 dark:text-white">{Math.min(runsPage * itemsPerPage, totalRuns.length)}</span> of{' '}
+                          <span className="font-semibold text-slate-900 dark:text-white">{totalRuns.length}</span> runs (10 per page)
+                        </div>
+
+                        <div className="flex items-center gap-1.5">
+                          <button
+                            onClick={() => setRunsPage(prev => Math.max(1, prev - 1))}
+                            disabled={runsPage === 1}
+                            className="px-3 py-1.5 rounded-lg border border-slate-300 dark:border-white/10 text-xs font-semibold text-slate-700 dark:text-gray-300 hover:bg-black/[0.05] dark:hover:bg-white/[0.05] disabled:opacity-40 disabled:cursor-not-allowed transition"
+                          >
+                            Previous
+                          </button>
+
+                          {Array.from({ length: totalRunPages }, (_, i) => i + 1).map((page) => (
+                            <button
+                              key={page}
+                              onClick={() => setRunsPage(page)}
+                              className={`w-7 h-7 rounded-lg text-xs font-semibold transition ${runsPage === page
+                                ? 'bg-brand-600 text-white shadow-sm'
+                                : 'border border-slate-300 dark:border-white/10 text-slate-700 dark:text-gray-300 hover:bg-black/[0.05] dark:hover:bg-white/[0.05]'
+                                }`}
+                            >
+                              {page}
+                            </button>
+                          ))}
+
+                          <button
+                            onClick={() => setRunsPage(prev => Math.min(totalRunPages, prev + 1))}
+                            disabled={runsPage === totalRunPages}
+                            className="px-3 py-1.5 rounded-lg border border-slate-300 dark:border-white/10 text-xs font-semibold text-slate-700 dark:text-gray-300 hover:bg-black/[0.05] dark:hover:bg-white/[0.05] disabled:opacity-40 disabled:cursor-not-allowed transition"
+                          >
+                            Next
+                          </button>
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                )}
+              </div>
+            </div>
+
+          </main>
+
+          {/* ═══ Splashed Push Notifications (Right Side Alert Popup) ═══ */}
+          <SplashedPushNotifications ref={notifyRef} />
+        </div>
+      );
+    }
+
+    window.addEventListener('error', function (e) {
+      console.error('Captured dashboard error:', e);
+      const rootEl = document.getElementById('root');
+      if (rootEl && (!rootEl.hasChildNodes() || rootEl.innerHTML === '')) {
+        rootEl.innerHTML = `
+          <div style="padding: 50px 20px; color: #ef4444; font-family: ui-sans-serif, system-ui, sans-serif; text-align: center;">
+            <div style="display: inline-block; background: rgba(239, 68, 68, 0.1); border: 1px solid rgba(239, 68, 68, 0.3); border-radius: 16px; padding: 24px; max-width: 500px;">
+              <h2 style="font-size: 18px; font-weight: bold; margin-bottom: 8px; color: #f87171;">Dashboard Initialization Error</h2>
+              <p style="color: #cbd5e1; font-size: 13px; margin-bottom: 16px; font-family: monospace;">${e.message || 'Script error'}</p>
+              <button onclick="window.location.reload()" style="background: #f97316; color: white; border: none; padding: 8px 18px; border-radius: 10px; cursor: pointer; font-size: 13px; font-weight: bold;">
+                Reload Dashboard
+              </button>
+            </div>
+          </div>
+        `;
+      }
+    });
+
+    try {
+      const root = ReactDOM.createRoot(document.getElementById('root'));
+      root.render(<App />);
+    } catch (err) {
+      console.error('Mounting error:', err);
+    }
+  </script>
+</body>
+
+</html>
